@@ -55,11 +55,13 @@ class Speaker:
 
         # :partition_format for VoxCeleb2 is h5, due to the 2GB limit of .pickle files.
         # In case of different datasets, h5 can be used to more easily work with more data
+        # For the :timit dataset originally .pickle was used, so this is to keep the old experiments
+        # working.
         #
-        if self.dataset == "voxceleb2":
-            self.partition_format = '.h5'
-        else:
+        if self.dataset == "timit":
             self.partition_format = '.pickle'
+        else:
+            self.partition_format = '.h5'
 
         if output_name is None:
             self.output_name = speaker_list
@@ -78,8 +80,10 @@ class Speaker:
             self.extract(self.extract_timit_callback, get_training("TIMIT"), '_RIFF.WAV', timit=True)
         elif self.dataset == "voxceleb2":
             self.extract(self.extract_voxceleb2_callback, get_training("VOXCELEB2"), '.wav')
+        elif self.dataset == "synthetic":
+            self.build_synthetic_dataset()
         else:
-            raise ValueError("self.dataset can only be one of ('timit', 'voxceleb2'), was " + self.dataset + ".")
+            raise ValueError("self.dataset can only be one of ('timit', 'voxceleb2', 'synthetic'), was " + self.dataset + ".")
 
         print("Done Extracting {}".format(self.speaker_list))
 
@@ -182,14 +186,9 @@ class Speaker:
             self.save_list_as_txt(file_names_test, self.speaker_list + "_test_files")
             self.save_list_as_txt(ids_train, self.speaker_list + "_train_ids")
             self.save_list_as_txt(ids_test, self.speaker_list + "_test_ids")
-
         else:
-
             self.save_list_as_txt(file_names, self.speaker_list + "_cluster_files")
             self.save_list_as_txt(speaker_ids, self.speaker_list + "_cluster_ids")
-
-
-
 
     def get_valid_speakers(self):
         """
@@ -208,7 +207,7 @@ class Speaker:
 
     def get_speaker_list_of_files(self, base_folder, file_ending, valid_speakers):
         """
-        Return a two dimensional array with all speakers and all of their audio files
+        Return a dictionary with all speakers and all of their audio files
         :return:
         speaker_files: dictionary with speaker_name as key and an array of full file paths to all audio files of that speaker
         """
@@ -273,6 +272,50 @@ class Speaker:
 
         # Extract the spectrogram's, speaker numbers and speaker names
         return IvecFeatureExtractor(self.speaker_list).extract_speaker_data(speaker_files)
+
+    def build_synthetic_dataset(self):
+        valid_speakers = self.get_valid_speakers()
+        speaker_count = len(valid_speakers)
+
+        synthetic_utterances_count = 256
+
+        # Create labels, half as 0 half as 1
+        y = np.zeros([synthetic_utterances_count,])
+        y[y.size//2:] = 1
+        
+        # In the case of overfit, ensure that there is some noise in the data that is learnabe and separable,
+        # in the case of overfit_simple only put ones and zeros
+        if self.speaker_list == 'synthetic_overfit':
+            # X shape: 1000 utterances, 1 channel, 128 frequency_elements, 800 max_audio_length
+            X = np.random.rand(synthetic_utterances_count, 1, self.frequency_elements, self.max_audio_length)
+
+            X[:synthetic_utterances_count//2,0,:,:] -= 0.2
+            X[synthetic_utterances_count//2:,0,:,:] += 0.2
+
+        elif self.speaker_list == 'synthetic_overfit_simple':
+            # X shape: 1000 utterances, 1 channel, 128 frequency_elements, 800 max_audio_length
+            X = np.zeros([synthetic_utterances_count, 1, self.frequency_elements, self.max_audio_length])
+
+            X[:synthetic_utterances_count//2,0,:,:] = 0
+            X[synthetic_utterances_count//2:,0,:,:] = 1
+
+        elif self.speaker_list == 'synthetic_zeros':
+            # X shape: 1000 utterances, 1 channel, 128 frequency_elements, 800 max_audio_length
+            X = np.zeros([synthetic_utterances_count, 1, self.frequency_elements, self.max_audio_length])
+
+        else:
+            raise ValueError("Synthetic datasets are only available for the speaker_lists ('synthetic_overfit', 'synthetic_overfit_simple', 'synthetic_zeros'), was " + self.speaker_list + ".")
+
+        # DEBUG: Look at statistics for X dataset
+        # print("[{}]\tShape: {}\tMean: {}\tStd: {}".format(self.speaker_list, X.shape, np.mean(X), np.std(X)))
+
+        # store dataset
+        with h5py.File(get_speaker_pickle(self.output_name, format=self.partition_format), 'w') as f:
+            f.create_dataset('X', data=X)
+            f.create_dataset('y', data=y)
+            ds = f.create_dataset('speaker_names', (len(valid_speakers),), dtype=h5py.special_dtype(vlen=str))
+            ds[:] = valid_speakers
+            f.close()
 
     def save_to_pickle( self, X, y, valid_speakers, filename):
         with open(get_speaker_pickle(filename), 'wb') as f:
