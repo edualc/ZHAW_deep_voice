@@ -15,7 +15,6 @@ from .bilstm_2layer_dropout_plus_2dense import bilstm_2layer_dropout
 from .core.data_gen import generate_test_data
 from common.spectrogram.speaker_train_splitter import SpeakerTrainSplit
 from networks.losses import get_custom_objects, get_loss
-
 import common.utils.pickler as pickler
 
 

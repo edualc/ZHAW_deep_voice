@@ -16,6 +16,9 @@ common/data/experiments/logs/*.csv
 common/data/experiments/results/*.pickle
 common/data/experiments/nets/*.pickle
 
+#################### WandB #####################
+wandb/*
+
 #################### Python ####################
 # Byte-compiled / optimized / DLL files
 */__pycache__/

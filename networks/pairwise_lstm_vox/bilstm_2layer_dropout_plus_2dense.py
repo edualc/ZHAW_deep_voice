@@ -23,8 +23,10 @@ from common.utils.paths import *
 from common.utils.pickler import load_speaker_pickle_or_h5
 
 from common.active_learning import active_learner as al
-
 from networks.losses import get_loss, add_final_layers
+
+import wandb
+from wandb.keras import WandbCallback
 
 '''This Class Trains a Bidirectional LSTM with 2 Layers, and 2 Denselayer and a Dropout Layers
     Parameters:
@@ -57,6 +59,11 @@ class bilstm_2layer_dropout(object):
 
         self.logger = get_logger('lstm_vox', logging.INFO)
         self.logger.info(self.network_name)
+        
+        self.wandb_run = wandb.init(
+            group=config.get('wandb','group'),
+            project=config.get('wandb','project_name')
+        )
 
         # Initializes Active Learning if necessary
         if active_learning_rounds == 0:
@@ -79,6 +86,20 @@ class bilstm_2layer_dropout(object):
 
         self.config = config
 
+        wandb.config.update({
+            'n_hidden1': self.n_hidden1,
+            'n_hidden2': self.n_hidden2,
+            'dense_factor': self.dense_factor,
+            'epochs': self.epochs,
+            'epochs_before_al': self.epochs_before_active_learning,
+            'segment_size': self.segment_size,
+            'learning_rate': 0.001,
+            'beta_1': 0.9,
+            'beta_2': 0.999,
+            'epsilon': 1e-08,
+            'decay': 0.0
+        })
+
         self.run_network()
 
     def create_net(self):
@@ -94,10 +115,18 @@ class bilstm_2layer_dropout(object):
         add_final_layers(model, self.config)
 
         loss_function = get_loss(self.config)
-        adam = keras.optimizers.Adam(lr=0.001, beta_1=0.9, beta_2=0.999, epsilon=1e-08, decay=0.0)
+
+        adam = keras.optimizers.Adam(
+            lr=wandb.config.learning_rate,
+            beta_1=wandb.config.beta_1,
+            beta_2=wandb.config.beta_2,
+            epsilon=wandb.config.epsilon,
+            decay=wandb.config.decay
+        )
 
         model.compile(loss=loss_function, optimizer=adam, metrics=['accuracy'])
         model.summary()
+
         return model
 
     def split_train_val_data(self, X, y):
@@ -118,7 +147,7 @@ class bilstm_2layer_dropout(object):
         )
         plot_callback_instance = PlotCallback(self.network_name)
 
-        return [csv_logger, info_logger, net_saver, net_checkpoint, plot_callback_instance]
+        return [csv_logger, info_logger, net_saver, net_checkpoint, plot_callback_instance, WandbCallback()]
 
     def fit(self, model, callbacks, X_t, X_v, y_t, y_v, epochs_to_run):
         # train_gen = dg.batch_generator_lstm(X_t, y_t, 100, segment_size=self.segment_size)
