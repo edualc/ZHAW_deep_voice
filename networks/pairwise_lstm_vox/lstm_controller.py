@@ -87,9 +87,9 @@ class LSTMVOX2Controller(NetworkController):
         speaker_numbers = []
 
         if self.best:
-            file_regex = self.name + "*_best.h5"
+            file_regex = self.name + ".*_best\.h5"
         else:
-            file_regex = self.name + "*.h5"
+            file_regex = self.name + ".*\.h5"
 
         checkpoints = list_all_files(get_experiment_nets(), file_regex)
 

@@ -30,7 +30,6 @@ from common.extrapolation.setup import setup_suite
 from common.utils.paths import *
 from common.utils.load_config import *
 
-
 # Constants
 DEFAULT_SETUP = ''
 DEFAULT_NETWORKS = ()
@@ -41,6 +40,8 @@ DEFAULT_BEST = False
 DEFAULT_DEV = False
 DEFAULT_CONFIG = 'config'
 
+import logging
+logging.getLogger('tensorflow').disabled = True
 
 class Controller:
     def __init__(self, config_name=DEFAULT_CONFIG,

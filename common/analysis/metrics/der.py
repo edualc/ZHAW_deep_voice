@@ -1,6 +1,11 @@
 from pyannote.metrics.diarization import DiarizationErrorRate
 from pyannote.core import Segment, Annotation
 
+import warnings
+# Here, we want to filter the following warning :
+# UserWarning: 'uem' was approximated by the union of 'reference' and 'hypothesis' extents.
+# "'uem' was approximated by the union of 'reference'"
+warnings.filterwarnings("ignore", category=UserWarning, module='pyannote')
 
 def diarization_error_rate(y_true, y_pred, times):
     """

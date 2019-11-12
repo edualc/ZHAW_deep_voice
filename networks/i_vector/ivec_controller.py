@@ -1,5 +1,10 @@
-import sidekit
+
 import numpy as np
+
+import warnings
+warnings.filterwarnings("ignore", category=UserWarning, module='sidekit')
+
+import sidekit
 
 from common.clustering.generate_embeddings import generate_embeddings
 from common.network_controller import NetworkController

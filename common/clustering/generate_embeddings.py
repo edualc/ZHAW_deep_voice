@@ -2,14 +2,11 @@ import numpy as np
 
 from common.utils.logger import *
 
-
 def generate_embeddings(outputs, speakers_inputs, vector_size):
     """
     Combines the utterances of the speakers in the train- and testing-set and combines them into embeddings.
-    :param train_output: The training output (8 sentences)
-    :param test_output:  The testing output (2 sentences)
-    :param train_speakers: The speakers used in training
-    :param test_speakers: The speakers used in testing
+    :param outputs:     Tuple of train_output (The training output, 8 sentences) and test_output (The testing output, 2 sentences)
+    :param speakers_inputs:     Tuple of train_speakers (The speakers used in training) and test_speakers (The speakers used in testing)
     :param vector_size: The size which the output will have
     :return: embeddings, the speakers and the number of embeddings
     """
@@ -45,10 +42,10 @@ def _create_utterances(num_speakers, vector_size, vectors, y):
     speakers = set(y)
 
     # Fill embeddings with utterances
-    for i in range(1, num_speakers+1):
+    for i in range(0, num_speakers):
 
         # Fetch correct utterance
-        utterance = embeddings[i-1]
+        utterance = embeddings[i]
 
         # Fetch values where same speaker and add to utterance
         indices = np.where(y == i)[0]
@@ -58,6 +55,6 @@ def _create_utterances(num_speakers, vector_size, vectors, y):
             utterance = np.add(utterance, value)
 
         # Add filled utterance to embeddings
-        embeddings[i-1] = np.divide(utterance, len(outputs))
+        embeddings[i] = np.divide(utterance, len(outputs))
 
     return embeddings, speakers

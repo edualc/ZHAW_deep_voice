@@ -1,5 +1,8 @@
 import numpy as np
-from matplotlib import pyplot as plot
+
+import matplotlib
+matplotlib.use('Agg')
+import matplotlib.pyplot as plot
 
 from common.spectrogram.spectrogram_converter import mel_spectrogram
 from common.utils.paths import *

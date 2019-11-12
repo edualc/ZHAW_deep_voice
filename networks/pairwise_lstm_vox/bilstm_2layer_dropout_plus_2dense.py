@@ -146,8 +146,9 @@ class bilstm_2layer_dropout(object):
             period=int(self.epochs / 10)
         )
         plot_callback_instance = PlotCallback(self.network_name)
+        wandb_callback = WandbCallback(save_model=False)
 
-        return [csv_logger, info_logger, net_saver, net_checkpoint, plot_callback_instance, WandbCallback()]
+        return [csv_logger, info_logger, net_saver, net_checkpoint, plot_callback_instance, wandb_callback]
 
     def fit(self, model, callbacks, X_t, X_v, y_t, y_v, epochs_to_run):
         # train_gen = dg.batch_generator_lstm(X_t, y_t, 100, segment_size=self.segment_size)
@@ -166,9 +167,9 @@ class bilstm_2layer_dropout(object):
             validation_steps=2,
             class_weight=None,
             max_queue_size=10,
-            nb_worker=1,
-            pickle_safe=False,
-            verbose=2
+            workers=1,
+            verbose=1,
+            use_multiprocessing=False
         )
 
     def run_network(self):

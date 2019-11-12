@@ -4,11 +4,10 @@
     Work of Gerber and Glinski.
 """
 import matplotlib
+matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 
 from common.utils.paths import *
-
-matplotlib.use('Agg')
 
 def save_accuracy_plot(history, name):
     save_accuracy_plot_direct(name, history.history['acc'], history.history['val_acc'])

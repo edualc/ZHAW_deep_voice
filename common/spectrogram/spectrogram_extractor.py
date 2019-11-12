@@ -27,15 +27,16 @@ class SpectrogramExtractor:
 
         # Crawl the base and all sub folders
         for speaker in speaker_files.keys():
-            curr_speaker_num += 1
             speaker_uid = curr_speaker_num
 
-            print('Extraction progress: %d/%d' % (curr_speaker_num, max_speakers))
+            print('Extraction progress: %d/%d' % (curr_speaker_num+1, max_speakers))
 
             # Extract files
             for full_path in speaker_files[speaker]:
                 extract_mel_spectrogram(full_path, X, y, global_idx, speaker_uid)
                 global_idx += 1
+
+            curr_speaker_num += 1
 
 
         return X[0:global_idx], y[0:global_idx]

@@ -96,6 +96,7 @@ def batch_generator_v2(X, y, batch_size=100, segment_size=100):
 def batch_generator_lstm(X, y, batch_size=100, segment_size=15):
     segments = X.shape[0]
     speakers = np.amax(y) + 1
+    
     # build as much batches as fit into the training set
     while 1:
         for i in range((segments + batch_size - 1) // batch_size):
@@ -104,6 +105,7 @@ def batch_generator_lstm(X, y, batch_size=100, segment_size=15):
             # here one batch is generated
             for j in range(0, batch_size):
                 speaker_idx = randint(0, len(X) - 1)
+
                 if y is not None:
                     yb[j] = y[speaker_idx]
                 spect = extract(X[speaker_idx, 0], segment_size)
@@ -132,8 +134,8 @@ def batch_generator_divergence_optimised(X, y, batch_size=100, segment_size=15, 
             samples = sample(population, n_speakers)
             # here one batch is generated
             for j in range(0, bs):
-                #choose random sentence of one speaker out of the 100 sampled above (duplicates MUST be allowed here!)
-                #calculate the index of the sentence in X and y to access the data
+                # choose random sentence of one speaker out of the 100 sampled above (duplicates MUST be allowed here!)
+                # calculate the index of the sentence in X and y to access the data
                 speaker_id = randint(0, len(samples) - 1)
 
                 indices_of_speaker = np.where(y == speaker_id)[0]
@@ -174,8 +176,8 @@ def batch_generator_lstm_v2(X, y, batch_size=100, segment_size=15):
 def transformy(y, batch_size, nb_classes):
     yn = np.zeros((batch_size, int(nb_classes)))
     k = 0
+
     for v in y:
-        # print v
         yn[k][v] = 1
         k += 1
     return yn

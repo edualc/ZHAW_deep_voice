@@ -6,7 +6,11 @@ the Bachelor thesis  of Vogt and Lukic (2016).
 import pickle
 
 import numpy as np
-from matplotlib import pyplot as plt
+
+import matplotlib
+matplotlib.use('Agg')
+import matplotlib.pyplot as plt
+
 from scipy.cluster.hierarchy import linkage
 
 from common.utils.paths import *

@@ -26,6 +26,7 @@ def analyse_results(network_name, checkpoint_names, set_of_predicted_clusters,
     :param embedding_numbers: A list which represent the number of embeddings in each checkpoint.
     :param set_of_times: A 2d array of the time per utterance [checkpoint, times]
     """
+
     logger = get_logger('analysis', logging.INFO)
     logger.info('Run analysis')
     metric_sets = [[None] * len(set_of_predicted_clusters) for _ in range(len(metric_names))]

@@ -1,7 +1,11 @@
-import sidekit
+
 import os
 from common.utils.paths import *
 
+import warnings
+warnings.filterwarnings("ignore", category=UserWarning, module='sidekit')
+
+import sidekit
 
 class IvecFeatureExtractor:
     def __init__(self, speaker_list):

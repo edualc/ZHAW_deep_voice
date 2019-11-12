@@ -279,7 +279,8 @@ class Speaker:
 
         synthetic_utterances_count = 256
 
-        # Create labels, half as 0 half as 1
+        # Create labels, half as 0 and half as 1
+        # 
         y = np.zeros([synthetic_utterances_count,])
         y[y.size//2:] = 1
         
