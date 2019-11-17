@@ -9,9 +9,9 @@ formatter = logging.Formatter('%(asctime)s %(levelname)s: %(message)s', datefmt=
 
 def get_logger(name, level):
     logger = logging.getLogger(name)
-    if not logger.hasHandlers():
-        logger.setLevel(level)
+    logger.setLevel(level)
 
+    if not logger.hasHandlers():
         ch = logging.StreamHandler()
         ch.setFormatter(formatter)
 
