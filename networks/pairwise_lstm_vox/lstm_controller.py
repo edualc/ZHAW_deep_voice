@@ -5,6 +5,7 @@ The controller to train and test the pairwise_lstm network
 import numpy as np
 from keras.models import Model
 from keras.models import load_model
+import logging
 
 from common.clustering.generate_embeddings import generate_embeddings
 from common.network_controller import NetworkController
@@ -99,6 +100,28 @@ class LSTMVOX2Controller(NetworkController):
         custom_objects = get_custom_objects(self.config)
         optimizer = 'rmsprop'
         set_of_total_times = []
+
+
+
+        # # ========================================================================
+        # # Equal Error Rate
+        # cp = checkpoints[0]
+
+
+        # model_full = load_model(get_experiment_nets(checkpoint), custom_objects=custom_objects)
+        # model_full.compile(loss=loss, optimizer=optimizer, metrics=metrics)
+
+        # model_partial = Model(inputs=model_full.input, outputs=model_full.layers[self.out_layer].output)
+
+        # test_output = np.asarray(model_partial.predict(x_test))
+        # train_output = np.asarray(model_partial.predict(x_train))
+
+        # eer = 0
+        # print("Equal Error Rate: {}".format(eer))
+        # sys.exit(1)
+        # # ========================================================================
+
+
 
         # Fill return values
         for checkpoint in checkpoints:

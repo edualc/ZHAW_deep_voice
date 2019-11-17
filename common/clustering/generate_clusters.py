@@ -4,7 +4,7 @@ import common.dominant_sets.dominantset as ds
 import numpy as np
 
 from common.utils.logger import *
-
+import logging
 
 def cluster_embeddings(set_of_embeddings, set_of_true_clusters, dominant_sets=False,
                        metric='cosine', method='complete'):
@@ -20,6 +20,8 @@ def cluster_embeddings(set_of_embeddings, set_of_true_clusters, dominant_sets=Fa
     logger.info('Cluster embeddings')
 
     set_predicted_clusters = []
+
+    # import code; code.interact(local=dict(globals(), **locals()))
 
     for embeddings, true_clusters in zip(set_of_embeddings, set_of_true_clusters):
         if dominant_sets:
@@ -40,6 +42,11 @@ def cluster_embeddings(set_of_embeddings, set_of_true_clusters, dominant_sets=Fa
 
 def original_clustering(embeddings, metric, method):
     embeddings_distance = cdist(embeddings, embeddings, metric)
+    
+    # If ValueError "The condensed distance matrix must contain only finite values." occurs, the
+    # embeddings provided have no measurable distance, i.e. the embeddings_distance contains only
+    # zero values.
+    # 
     embeddings_linkage = linkage(embeddings_distance, method, metric)
 
     thresholds = embeddings_linkage[:, 2]
@@ -50,7 +57,3 @@ def original_clustering(embeddings, metric, method):
         predicted_clusters.append(predicted_cluster)
 
     return predicted_clusters
-
-
-
-

@@ -5,7 +5,7 @@ from common.utils.logger import *
 def generate_embeddings(outputs, speakers_inputs, vector_size):
     """
     Combines the utterances of the speakers in the train- and testing-set and combines them into embeddings.
-    :param outputs:     Tuple of train_output (The training output, 8 sentences) and test_output (The testing output, 2 sentences)
+    :param outputs:     Tuple of train_output (The training output, 80%) and test_output (The testing output, 20%)
     :param speakers_inputs:     Tuple of train_speakers (The speakers used in training) and test_speakers (The speakers used in testing)
     :param vector_size: The size which the output will have
     :return: embeddings, the speakers and the number of embeddings
@@ -56,5 +56,7 @@ def _create_utterances(num_speakers, vector_size, vectors, y):
 
         # Add filled utterance to embeddings
         embeddings[i] = np.divide(utterance, len(outputs))
+
+    # import code; code.interact(local=dict(globals(), **locals()))
 
     return embeddings, speakers

@@ -88,9 +88,12 @@ def _calculate_analysis_values(predicted_clusters, true_cluster, times):
 
     # Loop over all possible clustering
     for i, predicted_cluster in enumerate(predicted_clusters):
-        logger.info('Calculated Scores for {}/{} predicted clusters'.format(i, len(predicted_clusters)))
+        logger.info('Calculated Scores for {}/{} predicted clusters'.format(i+1, len(predicted_clusters)))
+
         # Calculate different analysis's
         metric_results[0][i] = misclassification_rate(true_cluster, predicted_cluster)
+        print("MR: {}\t{}\t{}".format(metric_results[0][i], true_cluster, predicted_cluster))
+
         metric_results[1][i] = average_cluster_purity(true_cluster, predicted_cluster)
         metric_results[2][i] = adjusted_rand_index(true_cluster, predicted_cluster)
         metric_results[3][i] = diarization_error_rate(true_cluster, predicted_cluster, times)

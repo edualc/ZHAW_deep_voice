@@ -119,6 +119,10 @@ def _plot_curves(plot_file_name, curve_names, metric_sets, number_of_embeddings)
                                                   str(best_results[m][index]))
         color = colors[index]
 
+        # lehl@2019-11-17:  POTENTIAL FATAL ERROR
+        # It looks like the numbering for the plots is created backwards, i.e.
+        # if it should be from 1 to N this returns a list from N to 1!
+        # 
         number_of_clusters = np.arange(maximum_clusters_to_display, 0, -1)
 
         line = None
@@ -129,7 +133,9 @@ def _plot_curves(plot_file_name, curve_names, metric_sets, number_of_embeddings)
 
     fig1.legend(loc='upper center', bbox_to_anchor=(0.5, 0.33), ncol=4)
     fig1.savefig(get_result_png(plot_file_name + '.png'), format='png')
-    fig1.savefig(get_result_png(plot_file_name + '.svg'), format='svg')
+    
+    # Disable SVG for now
+    #fig1.savefig(get_result_png(plot_file_name + '.svg'), format='svg')
 
     return fig1
 
@@ -147,6 +153,7 @@ def _add_cluster_subplot(grid, position, y_label, colspan=1, x_maximum=80):
     subplot = plt.subplot2grid(grid, position, colspan=colspan)
     subplot.set_ylabel(y_label)
     subplot.set_xlabel('number of clusters')
-    subplot.set_xlim([-3, x_maximum + 3])
+    subplot.set_xlim([0, x_maximum + 1])
     subplot.set_ylim([-0.05, 1.05])
+    subplot.grid(True)
     return subplot
