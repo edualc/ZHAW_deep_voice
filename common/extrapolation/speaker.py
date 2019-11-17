@@ -277,7 +277,14 @@ class Speaker:
         valid_speakers = self.get_valid_speakers()
         speaker_count = len(valid_speakers)
 
-        synthetic_utterances_count = 256
+        if self.speaker_list == 'synthetic_overfit':
+            synthetic_utterances_count = 256
+        elif self.speaker_list == 'synthetic_zeros':
+            synthetic_utterances_count = 8
+        elif self.speaker_list == 'synthetic_overfit_multiclass':
+            synthetic_utterances_count = 50
+        else:
+            synthetic_utterances_count = 14
 
         # Create labels, half as 0 and half as 1
         # 
@@ -290,8 +297,8 @@ class Speaker:
             # X shape: 1000 utterances, 1 channel, 128 frequency_elements, 800 max_audio_length
             X = np.random.rand(synthetic_utterances_count, 1, self.frequency_elements, self.max_audio_length)
 
-            X[:synthetic_utterances_count//2,0,:,:] -= 0.04
-            X[synthetic_utterances_count//2:,0,:,:] += 0.04
+            X[:synthetic_utterances_count//2,0,:,:] -= 0.05
+            X[synthetic_utterances_count//2:,0,:,:] += 0.05
 
         elif self.speaker_list == 'synthetic_overfit_simple':
             # X shape: 1000 utterances, 1 channel, 128 frequency_elements, 800 max_audio_length
@@ -299,6 +306,20 @@ class Speaker:
 
             X[:synthetic_utterances_count//2,0,:,:] = 0
             X[synthetic_utterances_count//2:,0,:,:] = 1
+
+        elif self.speaker_list == 'synthetic_overfit_multiclass':
+            # X shape: 1000 utterances, 1 channel, 128 frequency_elements, 800 max_audio_length
+            X = np.zeros([synthetic_utterances_count, 1, self.frequency_elements, self.max_audio_length])
+
+            value = -0.2
+            speaker_id = -1
+            for i in range(synthetic_utterances_count):
+                if (i % 10) == 0:
+                    value += 0.2
+                    speaker_id += 1
+
+                X[i,0,:,:] = value
+                y[i] = speaker_id
 
         elif self.speaker_list == 'synthetic_zeros':
             # X shape: 1000 utterances, 1 channel, 128 frequency_elements, 800 max_audio_length

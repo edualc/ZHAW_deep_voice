@@ -51,6 +51,7 @@ def create_all_speakers(dataset):
         # 
         yield Speaker(False, 2, "synthetic_overfit", dataset="synthetic")
         yield Speaker(False, 2, "synthetic_overfit_simple", dataset="synthetic")
+        yield Speaker(False, 5, "synthetic_overfit_multiclass", dataset="synthetic")
     
     else:
         print("Dataset " + dataset + " is not known.")
