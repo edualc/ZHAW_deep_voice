@@ -297,8 +297,8 @@ class Speaker:
             # X shape: 1000 utterances, 1 channel, 128 frequency_elements, 800 max_audio_length
             X = np.random.rand(synthetic_utterances_count, 1, self.frequency_elements, self.max_audio_length)
 
-            X[:synthetic_utterances_count//2,0,:,:] -= 0.05
-            X[synthetic_utterances_count//2:,0,:,:] += 0.05
+            X[:synthetic_utterances_count//2,0,:,:] -= 0.15
+            X[synthetic_utterances_count//2:,0,:,:] += 0.15
 
         elif self.speaker_list == 'synthetic_overfit_simple':
             # X shape: 1000 utterances, 1 channel, 128 frequency_elements, 800 max_audio_length
