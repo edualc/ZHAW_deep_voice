@@ -143,7 +143,7 @@ class bilstm_2layer_dropout(object):
             monitor='val_loss', verbose=1, save_best_only=True)
         net_checkpoint = ActiveLearningModelCheckpoint(
             get_experiment_nets(self.network_name + "_{epoch:05d}.h5"),
-            period=int(self.epochs / 10)
+            period=int(self.epochs / 3)
         )
         plot_callback_instance = PlotCallback(self.network_name)
         wandb_callback = WandbCallback(save_model=False)

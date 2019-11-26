@@ -38,7 +38,7 @@ def cluster_embeddings(set_of_embeddings, set_of_true_clusters, dominant_sets=Fa
         set_predicted_clusters.append(predicted_clusters)
 
     return set_predicted_clusters
-
+    
 
 def original_clustering(embeddings, metric, method):
     embeddings_distance = cdist(embeddings, embeddings, metric)

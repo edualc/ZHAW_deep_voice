@@ -86,6 +86,7 @@ class LSTMVOX2Controller(NetworkController):
         set_of_embeddings = []
         set_of_speakers = []
         speaker_numbers = []
+        set_of_utterance_embeddings = []
 
         if self.best:
             file_regex = self.name + ".*_best\.h5"
@@ -101,28 +102,6 @@ class LSTMVOX2Controller(NetworkController):
         optimizer = 'rmsprop'
         set_of_total_times = []
 
-
-
-        # # ========================================================================
-        # # Equal Error Rate
-        # cp = checkpoints[0]
-
-
-        # model_full = load_model(get_experiment_nets(checkpoint), custom_objects=custom_objects)
-        # model_full.compile(loss=loss, optimizer=optimizer, metrics=metrics)
-
-        # model_partial = Model(inputs=model_full.input, outputs=model_full.layers[self.out_layer].output)
-
-        # test_output = np.asarray(model_partial.predict(x_test))
-        # train_output = np.asarray(model_partial.predict(x_train))
-
-        # eer = 0
-        # print("Equal Error Rate: {}".format(eer))
-        # sys.exit(1)
-        # # ========================================================================
-
-
-
         # Fill return values
         for checkpoint in checkpoints:
             logger.info('Running checkpoint: ' + checkpoint)
@@ -134,7 +113,7 @@ class LSTMVOX2Controller(NetworkController):
             checkpoint_result_pickle = checkpoint_result_pickle.split('.')[0] + '__ol' + str(self.out_layer) + '.' + checkpoint_result_pickle.split('.')[1]
 
             if os.path.isfile(checkpoint_result_pickle):
-                embeddings, speakers, num_embeddings = pickler.load(checkpoint_result_pickle)
+                embeddings, speakers, num_embeddings, utterance_embeddings = pickler.load(checkpoint_result_pickle)
             else:
                 # Load and compile the trained network
                 model_full = load_model(get_experiment_nets(checkpoint), custom_objects=custom_objects)
@@ -150,17 +129,18 @@ class LSTMVOX2Controller(NetworkController):
                 logger.info('test_output len -> ' + str(test_output.shape))
                 logger.info('train_output len -> ' + str(train_output.shape))
 
-                embeddings, speakers, num_embeddings = generate_embeddings(
+                embeddings, speakers, num_embeddings, utterance_embeddings = generate_embeddings(
                     [train_output, test_output], [speakers_train,
                     speakers_test], self.vec_size
                 )
 
-                pickler.save((embeddings, speakers, num_embeddings), checkpoint_result_pickle)
+                pickler.save((embeddings, speakers, num_embeddings, utterance_embeddings), checkpoint_result_pickle)
 
             # Fill the embeddings and speakers into the arrays
             set_of_embeddings.append(embeddings)
             set_of_speakers.append(speakers)
             speaker_numbers.append(num_embeddings)
+            set_of_utterance_embeddings.append(utterance_embeddings)
 
             # Calculate the time per utterance
             time = TimeCalculator.calc_time_all_utterances([speakers_train, speakers_test], self.seg_size)
@@ -171,7 +151,7 @@ class LSTMVOX2Controller(NetworkController):
         print("checkpoints: {}".format(checkpoints))
 
         logger.info('Pairwise_lstm test done.')
-        return checkpoints, set_of_embeddings, set_of_speakers, speaker_numbers, set_of_total_times
+        return checkpoints, set_of_embeddings, set_of_speakers, speaker_numbers, set_of_total_times, set_of_utterance_embeddings
 
 
 def load_and_prepare_data(data_path, segment_size):

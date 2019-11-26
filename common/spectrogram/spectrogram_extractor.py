@@ -38,7 +38,6 @@ class SpectrogramExtractor:
 
             curr_speaker_num += 1
 
-
         return X[0:global_idx], y[0:global_idx]
 
 def extract_mel_spectrogram(wav_path, X, y, index, speaker_uid):
@@ -63,6 +62,10 @@ def extract_mel_spectrogram(wav_path, X, y, index, speaker_uid):
             X[index, 0, i, j] = Sxx[i, j]
     y[index] = speaker_uid
 
+    # # TODO: lehl@2019-11-26
+    # # preprocessing, subtract mean, divided by time-wise var
+    # mu = np.mean(spec_mag, 0, keepdims=True)
+    # std = np.std(spec_mag, 0, keepdims=True)
 
 # Extracts the spectrogram and discards all padded data
 def extract_spectrogram(spectrogram, segment_size, frequency_elements):

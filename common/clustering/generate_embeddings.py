@@ -20,16 +20,44 @@ def generate_embeddings(outputs, speakers_inputs, vector_size):
     speakers = []
 
     for output, speakers_input in zip(outputs, speakers_inputs):
-        embeddings_output, speakers_output = _create_utterances(num_speakers, vector_size, output, speakers_input)
+        embeddings_output, speakers_output = _create_speaker_embeddings(num_speakers, vector_size, output, speakers_input)
         embeddings.extend(embeddings_output)
         speakers.extend(speakers_output)
 
-    return embeddings, speakers, number_embeddings
+    utterance_embeddings = _create_utterance_embeddings(num_speakers, vector_size, outputs, speakers_inputs)
 
+    return embeddings, speakers, number_embeddings, utterance_embeddings
 
-def _create_utterances(num_speakers, vector_size, vectors, y):
+def _create_utterance_embeddings(num_speakers, vector_size, Xs, ys):
     """
-    Creates one utterance for each speaker in the vectors.
+    Creates one embedding per utterance
+    """
+    
+    X = np.concatenate((Xs[0],Xs[1]))
+    y = np.concatenate((ys[0],ys[1]))
+
+    # Check how many times the least represented class is present
+    min_occurance = np.min(np.unique(y, return_counts=True)[1])
+
+    embeddings = np.zeros((num_speakers, min_occurance, X.shape[1]))
+
+    # Speakers are numbered/labeled from 0 to n-1
+    # 
+    for i in range(num_speakers):
+        print("Creating Utterance Embeddings for Speaker {}/{}...".format(i+1,num_speakers),end='')
+        
+        indices = np.where(y == i)[0]
+        sampled_indices = np.random.choice(indices, min_occurance, replace=False)
+        embeddings[i,:] = np.take(X, sampled_indices, axis=0)
+
+        print('done')
+
+    # Shape: <NumSpeakers, UtterancesPerSpeaker, EmbeddingLength>
+    return embeddings
+
+def _create_speaker_embeddings(num_speakers, vector_size, vectors, y):
+    """
+    Creates one embedding for each speaker in the vectors.
     :param num_speakers: Number of distinct speakers in this vector
     :param vector_size: Number of data in utterance
     :param vectors: The unordered speaker data
@@ -56,7 +84,5 @@ def _create_utterances(num_speakers, vector_size, vectors, y):
 
         # Add filled utterance to embeddings
         embeddings[i] = np.divide(utterance, len(outputs))
-
-    # import code; code.interact(local=dict(globals(), **locals()))
 
     return embeddings, speakers

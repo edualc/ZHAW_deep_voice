@@ -54,7 +54,7 @@ class NetworkController:
         All return values are sets of possible multiples.
         :return: checkpoints, embeddings, speakers, speaker numbers and the time per utterance
         """
-        return None, None, None, None, None
+        return None, None, None, None, None, None
 
     def get_clusters(self):
         """
@@ -67,19 +67,21 @@ class NetworkController:
         embeddings_numbers: A list which represent the number of embeddings in each checkpoint.
         set_of_times: A 2D array containing the time per utterance
         """
-        checkpoint_names, set_of_embeddings, set_of_true_clusters, embeddings_numbers, set_of_times =\
+        checkpoint_names, set_of_embeddings, set_of_true_clusters, \
+            embeddings_numbers, set_of_times, set_of_utterance_embeddings =\
             self.get_embeddings()
         set_of_predicted_clusters = cluster_embeddings(set_of_embeddings, set_of_true_clusters,
                                                        self.config.getboolean('test', 'dominant_set'))
 
-        return checkpoint_names, set_of_predicted_clusters, set_of_true_clusters, embeddings_numbers, set_of_times
+        return checkpoint_names, set_of_predicted_clusters, set_of_true_clusters, embeddings_numbers, set_of_times, set_of_utterance_embeddings
 
     def test_network(self):
         """
         Tests the network implementation with the validation data set and saves the result sets
         of the different metrics in analysis.
         """
-        checkpoint_names, set_of_predicted_clusters, set_of_true_clusters, embeddings_numbers, set_of_times = \
+        checkpoint_names, set_of_predicted_clusters, set_of_true_clusters, embeddings_numbers, set_of_times, set_of_utterance_embeddings = \
             self.get_clusters()
+
         analyse_results(self.name, checkpoint_names, set_of_predicted_clusters, set_of_true_clusters,
-                        embeddings_numbers, set_of_times)
+                        embeddings_numbers, set_of_times, set_of_utterance_embeddings)
