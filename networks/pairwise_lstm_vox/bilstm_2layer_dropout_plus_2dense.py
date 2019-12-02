@@ -1,5 +1,7 @@
 import pickle
 import numpy as np
+import h5py
+from tqdm import tqdm
 
 np.random.seed(1337)  # for reproducibility
 
@@ -87,17 +89,12 @@ class bilstm_2layer_dropout(object):
         self.config = config
 
         wandb.config.update({
-            'n_hidden1': self.n_hidden1,
-            'n_hidden2': self.n_hidden2,
-            'dense_factor': self.dense_factor,
+            'n_hidden1': self.n_hidden1, 'n_hidden2': self.n_hidden2, 'dense_factor': self.dense_factor,
             'epochs': self.epochs,
             'epochs_before_al': self.epochs_before_active_learning,
             'segment_size': self.segment_size,
             'learning_rate': 0.001,
-            'beta_1': 0.9,
-            'beta_2': 0.999,
-            'epsilon': 1e-08,
-            'decay': 0.0
+            'beta_1': 0.9, 'beta_2': 0.999, 'epsilon': 1e-08, 'decay': 0.0
         })
 
         self.run_network()
@@ -150,13 +147,21 @@ class bilstm_2layer_dropout(object):
 
         return [csv_logger, info_logger, net_saver, net_checkpoint, plot_callback_instance, wandb_callback]
 
-    def fit(self, model, callbacks, X_t, X_v, y_t, y_v, epochs_to_run):
+    def fit(self, model, callbacks, epochs_to_run):
+        # Pass function handles to generators
+        train_statistics = self.get_training_statistics
+        dataset_file = self.get_dataset_file
+
+        train_gen = dg.batch_generator_h5(train_statistics, 'train', dataset_file, batch_size=100, segment_size=self.segment_size)
+        val_gen = dg.batch_generator_h5(train_statistics, 'val', dataset_file, batch_size=100, segment_size=self.segment_size)
+
+        # # Original Batch Generator
         # train_gen = dg.batch_generator_lstm(X_t, y_t, 100, segment_size=self.segment_size)
         # val_gen = dg.batch_generator_lstm(X_v, y_v, 100, segment_size=self.segment_size)
 
-        # Alternative Batch Generator
-        train_gen = dg.batch_generator_divergence_optimised(X_t, y_t, 100, segment_size=self.segment_size)
-        val_gen = dg.batch_generator_divergence_optimised(X_v, y_v, 100, segment_size=self.segment_size)
+        # # Alternative Batch Generator
+        # train_gen = dg.batch_generator_divergence_optimised(X_t, y_t, 100, segment_size=self.segment_size)
+        # val_gen = dg.batch_generator_divergence_optimised(X_v, y_v, 100, segment_size=self.segment_size)
 
         history = model.fit_generator(
             train_gen,
@@ -177,17 +182,17 @@ class bilstm_2layer_dropout(object):
         model = self.create_net()
         callbacks = self.create_callbacks()
 
-        # initial train set
-        speaker_pickle = get_speaker_pickle(self.training_data, format='.h5')
-        X_pool, y_pool, _ = self._read_speaker_data(speaker_pickle)
-        X_t, y_t, X_v, y_v = self.split_train_val_data(X_pool, y_pool)
+        # # initial train set
+        # speaker_pickle = get_speaker_pickle(self.training_data, format='.h5')
+        # X_pool, y_pool, _ = self._read_speaker_data(speaker_pickle)
+        # X_t, y_t, X_v, y_v = self.split_train_val_data(X_pool, y_pool)
 
-        del X_pool
-        del y_pool
+        # del X_pool
+        # del y_pool
 
         # initial train
         if self.epochs_before_active_learning != 0:
-            self.fit(model, callbacks, X_t, X_v, y_t, y_v, self.epochs_before_active_learning)
+            self.fit(model, callbacks, self.epochs_before_active_learning)
 
         # active learning
         if self.active_learning_rounds != 0:
@@ -218,3 +223,78 @@ class bilstm_2layer_dropout(object):
         self.logger.info('create_train_data ' + speaker_pickle)
         (X, y, _) = load_speaker_pickle_or_h5(speaker_pickle)
         return (X, y, speaker_pickle)
+
+
+    #
+    #
+    # ===================================================================================
+    # TODO: Refactor into own files to be used in all networks during training
+    # ===================================================================================
+    # 
+    # 
+    # 
+    # @MEMOIZED
+    # On initial execution the h5py file gets accessed.
+    # The dataset has the attributes :audio_names, :statistics and :data
+    # 
+    def get_dataset_file(self):
+        try:
+            return self.dataset_file
+        except AttributeError:
+            dataset_path = self.config.get('train','dataset') + '.h5'
+            self.dataset_file = h5py.File(dataset_path, 'r')
+            
+            return self.dataset_file
+
+    # @MEMOIZED
+    # Returns the speaker list given for the TRAINING part
+    # 
+    def get_dataset_speaker_list(self):
+        try:
+            return self.dataset_speaker_list
+        except AttributeError:
+            speaker_list_path = get_speaker_list(self.config.get('train','speaker_list'))
+            self.dataset_speaker_list = [line.rstrip('\n') for line in open(speaker_list_path)] 
+
+            return self.dataset_speaker_list
+
+    # @MEMOIZED
+    # Returns a dict containing the indices for each speaker that are used in while training
+    # either for training (:train) or validation (:val) and the ratio of the validation share
+    # compared to all speaker files (:val_share)
+    #  
+    def get_training_statistics(self):
+        try:
+            return self.training_data_statistics
+        except AttributeError:
+            self.training_data_statistics = {}
+            data_file = self.get_dataset_file()
+
+            for speaker in tqdm(self.get_dataset_speaker_list(), ncols=100, desc='split training and validation data'):
+                train_indices = []
+                val_indices = []
+                amount_of_files = data_file['statistics/' + speaker].shape[0]
+
+                # How of the training data is used for validation
+                validation_share = self.config.getfloat('train','validation_share')
+
+                total_speaker_time = np.sum(data_file['statistics/'+ speaker])
+                cumulative_sum = np.cumsum(data_file['statistics/'+ speaker])
+
+                # Calculate which is the first index of files that is 
+                cut_off_index = np.where(cumulative_sum > total_speaker_time * (1 - validation_share))[0][0]
+
+                train_indices = np.arange(cut_off_index)
+                val_indices = np.arange(cut_off_index, data_file['statistics/' + speaker].shape[0])
+
+                # Create speaker dict
+                self.training_data_statistics[speaker] = {
+                    'train': train_indices,
+                    'val': val_indices,
+                    'val_share': np.sum(data_file['statistics/'+ speaker][cut_off_index:] / total_speaker_time)
+                }
+
+            return self.training_data_statistics
+
+    def get_num_segments(self, train_type):
+        return sum(map(lambda x: x.shape[0], (map(lambda x: self.get_training_statistics()[x][train_type], self.get_training_statistics()))))

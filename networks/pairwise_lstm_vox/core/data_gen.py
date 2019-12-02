@@ -6,6 +6,7 @@
 from random import randint, sample, choice
 
 import numpy as np
+import time
 
 from common.spectrogram.spectrogram_extractor import extract_spectrogram
 from . import settings
@@ -47,49 +48,49 @@ def generate_test_data(X, y, segment_size):
     return X_test[0:len(y_test)], np.asarray(y_test, dtype=np.int32)
 
 
-# Batch generator for CNNs
-def batch_generator(X, y, batch_size=100, segment_size=100):
-    segments = X.shape[0]
-    bs = batch_size
-    speakers = np.amax(y) + 1
-    # build as much batches as fit into the training set
-    while 1:
-        for i in range((segments + bs - 1) // bs):
-            Xb = np.zeros((bs, 1, settings.FREQ_ELEMENTS, segment_size), dtype=np.float32)
-            yb = np.zeros(bs, dtype=np.int32)
-            # here one batch is generated
-            for j in range(0, bs):
-                speaker_idx = randint(0, len(X) - 1)
-                if y is not None:
-                    yb[j] = y[speaker_idx]
-                spect = extract(X[speaker_idx, 0], segment_size)
-                seg_idx = randint(0, spect.shape[1] - segment_size)
-                Xb[j, 0] = spect[:, seg_idx:seg_idx + segment_size]
-            yield Xb, transformy(yb, bs, speakers)
+# # Batch generator for CNNs
+# def batch_generator(X, y, batch_size=100, segment_size=100):
+#     segments = X.shape[0]
+#     bs = batch_size
+#     speakers = np.amax(y) + 1
+#     # build as much batches as fit into the training set
+#     while 1:
+#         for i in range((segments + bs - 1) // bs):
+#             Xb = np.zeros((bs, 1, settings.FREQ_ELEMENTS, segment_size), dtype=np.float32)
+#             yb = np.zeros(bs, dtype=np.int32)
+#             # here one batch is generated
+#             for j in range(0, bs):
+#                 speaker_idx = randint(0, len(X) - 1)
+#                 if y is not None:
+#                     yb[j] = y[speaker_idx]
+#                 spect = extract(X[speaker_idx, 0], segment_size)
+#                 seg_idx = randint(0, spect.shape[1] - segment_size)
+#                 Xb[j, 0] = spect[:, seg_idx:seg_idx + segment_size]
+#             yield Xb, transformy(yb, bs, speakers)
 
 
-'''creates the a batch for CNN networks, with Pariwise Labels, 
-for use with core.pairwise_kl_divergence_full_labels'''
+# '''creates the a batch for CNN networks, with Pariwise Labels, 
+# for use with core.pairwise_kl_divergence_full_labels'''
 
 
-def batch_generator_v2(X, y, batch_size=100, segment_size=100):
-    segments = X.shape[0]
-    bs = batch_size
-    speakers = np.amax(y) + 1
-    # build as much batches as fit into the training set
-    while 1:
-        for i in range((segments + bs - 1) // bs):
-            Xb = np.zeros((bs, 1, settings.FREQ_ELEMENTS, segment_size), dtype=np.float32)
-            yb = np.zeros(bs, dtype=np.int32)
-            # here one batch is generated
-            for j in range(0, bs):
-                speaker_idx = randint(0, len(X) - 1)
-                if y is not None:
-                    yb[j] = y[speaker_idx]
-                spect = extract(X[speaker_idx, 0], segment_size)
-                seg_idx = randint(0, spect.shape[1] - segment_size)
-                Xb[j, 0] = spect[:, seg_idx:seg_idx + segment_size]
-            yield Xb, create_pairs(yb)
+# def batch_generator_v2(X, y, batch_size=100, segment_size=100):
+#     segments = X.shape[0]
+#     bs = batch_size
+#     speakers = np.amax(y) + 1
+#     # build as much batches as fit into the training set
+#     while 1:
+#         for i in range((segments + bs - 1) // bs):
+#             Xb = np.zeros((bs, 1, settings.FREQ_ELEMENTS, segment_size), dtype=np.float32)
+#             yb = np.zeros(bs, dtype=np.int32)
+#             # here one batch is generated
+#             for j in range(0, bs):
+#                 speaker_idx = randint(0, len(X) - 1)
+#                 if y is not None:
+#                     yb[j] = y[speaker_idx]
+#                 spect = extract(X[speaker_idx, 0], segment_size)
+#                 seg_idx = randint(0, spect.shape[1] - segment_size)
+#                 Xb[j, 0] = spect[:, seg_idx:seg_idx + segment_size]
+#             yield Xb, create_pairs(yb)
 
 
 # Batch generator von LSTMS
@@ -149,28 +150,28 @@ def batch_generator_divergence_optimised(X, y, batch_size=100, segment_size=15, 
             yield Xb.reshape(bs, segment_size, spectrogram_height), transformy(yb, bs, speakers)
 
 
-'''creates the a batch for LSTM networks, with Pairwise Labels, 
-for use with core.pairwise_kl_divergence_full_labels'''
+# '''creates the a batch for LSTM networks, with Pairwise Labels, 
+# for use with core.pairwise_kl_divergence_full_labels'''
 
 
-def batch_generator_lstm_v2(X, y, batch_size=100, segment_size=15):
-    segments = X.shape[0]
-    bs = batch_size
-    speakers = np.amax(y) + 1
-    # build as much batches as fit into the training set
-    while 1:
-        for i in range((segments + bs - 1) // bs):
-            Xb = np.zeros((bs, 1, settings.FREQ_ELEMENTS, segment_size), dtype=np.float32)
-            yb = np.zeros(bs, dtype=np.int32)
-            # here one batch is generated
-            for j in range(0, bs):
-                speaker_idx = randint(0, len(X) - 1)
-                if y is not None:
-                    yb[j] = y[speaker_idx]
-                spect = extract(X[speaker_idx, 0], segment_size)
-                seg_idx = randint(0, spect.shape[1] - segment_size)
-                Xb[j, 0] = spect[:, seg_idx:seg_idx + segment_size]
-            yield Xb.reshape(bs, segment_size, settings.FREQ_ELEMENTS), create_pairs(yb)
+# def batch_generator_lstm_v2(X, y, batch_size=100, segment_size=15):
+#     segments = X.shape[0]
+#     bs = batch_size
+#     speakers = np.amax(y) + 1
+#     # build as much batches as fit into the training set
+#     while 1:
+#         for i in range((segments + bs - 1) // bs):
+#             Xb = np.zeros((bs, 1, settings.FREQ_ELEMENTS, segment_size), dtype=np.float32)
+#             yb = np.zeros(bs, dtype=np.int32)
+#             # here one batch is generated
+#             for j in range(0, bs):
+#                 speaker_idx = randint(0, len(X) - 1)
+#                 if y is not None:
+#                     yb[j] = y[speaker_idx]
+#                 spect = extract(X[speaker_idx, 0], segment_size)
+#                 seg_idx = randint(0, spect.shape[1] - segment_size)
+#                 Xb[j, 0] = spect[:, seg_idx:seg_idx + segment_size]
+#             yield Xb.reshape(bs, segment_size, settings.FREQ_ELEMENTS), create_pairs(yb)
 
 
 def transformy(y, batch_size, nb_classes):
@@ -217,3 +218,64 @@ def createData(X, y, samples, segment_size=15):
             idx += 1
     shuffle_data(Xb, yb)
     return Xb, yb
+
+
+# lehl@2019-12-02: Batch generator using h5py dataset and speaker list
+# 
+# Params:
+# statistics        Dict containing information for which ids can be used per speaker
+# batch_type        'train' or 'val', for statistics access
+# dataset           H5py handle of the dataset file
+# 
+def batch_generator_h5(statistics_fun, batch_type, dataset_fun, batch_size=100, segment_size=40):
+    start_time = time.time()
+
+    import code; code.interact(local=dict(globals(), **locals()))
+
+    num_speakers = len(statistics_fun().keys())
+
+    # Calculates the amount of indices used for the given :batch_type across all
+    # speakers, such that this equals to the amount of spectrograms available for
+    # training
+    #
+    # TODO: use from bilstm layer
+    #
+    num_segments =  sum(map(lambda x: x.shape[0], (map(lambda x: statistics_fun()[x][batch_type], statistics_fun()))))
+
+    while 1:
+        for i in range((num_segments // batch_size) + 1):
+            Xb = np.zeros((batch_size, 1, settings.FREQ_ELEMENTS, segment_size), dtype=np.float32)
+            yb = np.zeros(batch_size, dtype=np.int32)
+
+            for j in range(0, batch_size):
+                speaker_index = randint(0, num_speakers - 1)
+
+                yb[j] = speaker_index
+
+                # TODO: Extract Spectrogram
+
+
+    # segments = X.shape[0]
+    # speakers = np.amax(y) + 1
+    
+    # # build as much batches as fit into the training set
+    # while 1:
+    #     for i in range((segments + batch_size - 1) // batch_size):
+    #         Xb = np.zeros((batch_size, 1, settings.FREQ_ELEMENTS, segment_size), dtype=np.float32)
+    #         yb = np.zeros(batch_size, dtype=np.int32)
+    #         # here one batch is generated
+    #         for j in range(0, batch_size):
+    #             speaker_idx = randint(0, len(X) - 1)
+
+    #             if y is not None:
+    #                 yb[j] = y[speaker_idx]
+    #             spect = extract(X[speaker_idx, 0], segment_size)
+    #             seg_idx = randint(0, spect.shape[1] - segment_size)
+    #             Xb[j, 0] = spect[:, seg_idx:seg_idx + segment_size]
+
+    #         yield Xb.reshape(batch_size, segment_size, settings.FREQ_ELEMENTS), transformy(yb, batch_size, speakers)
+
+
+    end_time = time.time()
+    print("batch_generator_h5 {} took {}".format(batch_type, end_time-start_time))
+    # yield 
