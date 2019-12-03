@@ -228,54 +228,54 @@ def createData(X, y, samples, segment_size=15):
 # dataset           H5py handle of the dataset file
 # 
 def batch_generator_h5(statistics_fun, batch_type, dataset_fun, batch_size=100, segment_size=40):
-    start_time = time.time()
-
-    import code; code.interact(local=dict(globals(), **locals()))
-
-    num_speakers = len(statistics_fun().keys())
-
     # Calculates the amount of indices used for the given :batch_type across all
     # speakers, such that this equals to the amount of spectrograms available for
     # training
     #
-    # TODO: use from bilstm layer
+    # TODO: use method from bilstm layer
     #
     num_segments =  sum(map(lambda x: x.shape[0], (map(lambda x: statistics_fun()[x][batch_type], statistics_fun()))))
+    speakers = np.array(list(statistics_fun().keys()))
 
+    num_speakers = speakers.shape[0]
+
+    # build as many batches as the training set is big
+    # 
     while 1:
         for i in range((num_segments // batch_size) + 1):
             Xb = np.zeros((batch_size, 1, settings.FREQ_ELEMENTS, segment_size), dtype=np.float32)
             yb = np.zeros(batch_size, dtype=np.int32)
 
+            # batch_start = time.time()
+
             for j in range(0, batch_size):
+                # DEBUG CODE
+                # import code; code.interact(local=dict(globals(), **locals()))
+                # [batch_size, segment_size, batch_type, num_speakers, num_segments]
+
                 speaker_index = randint(0, num_speakers - 1)
+                speaker_name = speakers[speaker_index]
 
+                # Extract Spectrogram
+                # Choose from all the utterances of the given speaker randomly
+                # 
+                utterance_index = np.random.choice(statistics_fun()[speaker_name][batch_type])
+                full_spect = dataset_fun()['data/' + speaker_name][utterance_index]
+                
+                # TODO: lehl@2019-12-03: Is the reshape ordering correct?
+                # 
+                spect = full_spect.reshape(settings.FREQ_ELEMENTS, full_spect.shape[0] // settings.FREQ_ELEMENTS)
+
+                # Extract random :segment_size long part of the spectrogram
+                # 
+                seg_idx = randint(0, spect.shape[1] - segment_size)
+                Xb[j, 0] = spect[:, seg_idx:seg_idx + segment_size]
+
+                # Set label
+                # 
                 yb[j] = speaker_index
+                
+            # batch_end = time.time()
+            # print("batch_generator_h5 single batch {} took {}".format(i, batch_end - batch_start))
 
-                # TODO: Extract Spectrogram
-
-
-    # segments = X.shape[0]
-    # speakers = np.amax(y) + 1
-    
-    # # build as much batches as fit into the training set
-    # while 1:
-    #     for i in range((segments + batch_size - 1) // batch_size):
-    #         Xb = np.zeros((batch_size, 1, settings.FREQ_ELEMENTS, segment_size), dtype=np.float32)
-    #         yb = np.zeros(batch_size, dtype=np.int32)
-    #         # here one batch is generated
-    #         for j in range(0, batch_size):
-    #             speaker_idx = randint(0, len(X) - 1)
-
-    #             if y is not None:
-    #                 yb[j] = y[speaker_idx]
-    #             spect = extract(X[speaker_idx, 0], segment_size)
-    #             seg_idx = randint(0, spect.shape[1] - segment_size)
-    #             Xb[j, 0] = spect[:, seg_idx:seg_idx + segment_size]
-
-    #         yield Xb.reshape(batch_size, segment_size, settings.FREQ_ELEMENTS), transformy(yb, batch_size, speakers)
-
-
-    end_time = time.time()
-    print("batch_generator_h5 {} took {}".format(batch_type, end_time-start_time))
-    # yield 
+            yield Xb.reshape(batch_size, segment_size, settings.FREQ_ELEMENTS), np.eye(num_speakers)[yb]

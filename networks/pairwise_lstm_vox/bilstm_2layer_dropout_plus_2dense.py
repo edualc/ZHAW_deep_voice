@@ -148,7 +148,13 @@ class bilstm_2layer_dropout(object):
         return [csv_logger, info_logger, net_saver, net_checkpoint, plot_callback_instance, wandb_callback]
 
     def fit(self, model, callbacks, epochs_to_run):
+        # Ensure statistics are initialized/memoized
+        # 
+        self.get_training_statistics()
+        self.get_dataset_file()
+
         # Pass function handles to generators
+        # 
         train_statistics = self.get_training_statistics
         dataset_file = self.get_dataset_file
 
@@ -281,8 +287,12 @@ class bilstm_2layer_dropout(object):
                 total_speaker_time = np.sum(data_file['statistics/'+ speaker])
                 cumulative_sum = np.cumsum(data_file['statistics/'+ speaker])
 
-                # Calculate which is the first index of files that is 
-                cut_off_index = np.where(cumulative_sum > total_speaker_time * (1 - validation_share))[0][0]
+                # Calculate which is the first index of files that is, an 
+                # extra +1 is added to include the cut_off_index file in the training,
+                # otherwise it would be "AT LEAST" validation_share of the dataset
+                # in the validation set
+                # 
+                cut_off_index = np.where(cumulative_sum > total_speaker_time * (1 - validation_share))[0][0] + 1
 
                 train_indices = np.arange(cut_off_index)
                 val_indices = np.arange(cut_off_index, data_file['statistics/' + speaker].shape[0])
