@@ -29,72 +29,61 @@ def extract(spectrogram, segment_size):
     return extract_spectrogram(spectrogram, segment_size, settings.FREQ_ELEMENTS)
 
 
-# generates the data for testing the network, with the specified segment_size (timewindow)
-def generate_test_data(X, y, segment_size):
-    segments = X.shape[0] * 3 * (800 // segment_size)
-    X_test = np.zeros((segments, 1, settings.FREQ_ELEMENTS, segment_size), dtype=np.float32)
+def generate_test_data_h5(test_type, dataset, segment_size, spectrogram_height):
+    if test_type not in ['all', 'short', 'long']:
+        raise ValueError(':test_type should be either "all", "short" or "long".')
+
+    # Load the speakers(-list) used for testing
+    # 
+    all_speakers = np.array(dataset.get_test_speaker_list())
+    num_speakers = all_speakers.shape[0]
+
+    # Calculate the amount of spectrograms in total and the
+    # total length of all those spectrograms according to the statistics
+    # 
+    total_test_length = np.sum(list(map(lambda x: np.sum(x), map(lambda y: dataset.get_test_file()['statistics'][y][dataset.get_test_statistics()[y][test_type]], all_speakers))))
+    num_spectrograms = dataset.get_test_num_segments(test_type)
+
+    # Get an upper bound estimate for the amount of segments actually produced
+    # in terms of spectrogram slices of length :segment_size
+    # 
+    num_segments = total_test_length // segment_size
+
+    X_test = np.zeros((num_segments, spectrogram_height, segment_size))
     y_test = []
 
+    # Iterate over all speakers and extract spectrograms of length segment_size
+    # 
     pos = 0
-    for i in range(len(X)):
-        spect = extract(X[i, 0], segment_size)
+    for i in range(num_speakers):
+        speaker_name = all_speakers[i]
 
-        for j in range(int(spect.shape[1] / segment_size)):
-            y_test.append(y[i])
-            seg_idx = j * segment_size
-            X_test[pos, 0] = spect[:, seg_idx:seg_idx + segment_size]
-            pos += 1
+        for utterance_index in dataset.get_test_statistics()[speaker_name][test_type]:
+            # Extract the full spectrogram
+            # 
+            full_spect = dataset.get_test_file()['data/'+speaker_name][utterance_index]
 
-    return X_test[0:len(y_test)], np.asarray(y_test, dtype=np.int32)
+            # lehl@2019-12-03: Spectrogram needs to be reshaped with (time_length, 128) and then
+            # transposed as the expected ordering is (128, time_length)
+            # TODO: Can this be improved (check how it's refactored again in return statement)
+            # 
+            spect = full_spect.reshape(full_spect.shape[0] // spectrogram_height, spectrogram_height).T
 
+            # Extract as many slices from each spectrogram-utterance
+            # as there would be space, as in how many full windows (segment_size) would fit in the
+            # length of this utterance if they'd be placed consecutively without allowing partial segments
+            # 
+            for segment in range(spect.shape[0] // segment_size):
+                seg_idx = randint(0, spect.shape[1] - segment_size)
+                X_test[pos] = spect[:, seg_idx:seg_idx + segment_size]
+                y_test.append(i)
 
-# # Batch generator for CNNs
-# def batch_generator(X, y, batch_size=100, segment_size=100):
-#     segments = X.shape[0]
-#     bs = batch_size
-#     speakers = np.amax(y) + 1
-#     # build as much batches as fit into the training set
-#     while 1:
-#         for i in range((segments + bs - 1) // bs):
-#             Xb = np.zeros((bs, 1, settings.FREQ_ELEMENTS, segment_size), dtype=np.float32)
-#             yb = np.zeros(bs, dtype=np.int32)
-#             # here one batch is generated
-#             for j in range(0, bs):
-#                 speaker_idx = randint(0, len(X) - 1)
-#                 if y is not None:
-#                     yb[j] = y[speaker_idx]
-#                 spect = extract(X[speaker_idx, 0], segment_size)
-#                 seg_idx = randint(0, spect.shape[1] - segment_size)
-#                 Xb[j, 0] = spect[:, seg_idx:seg_idx + segment_size]
-#             yield Xb, transformy(yb, bs, speakers)
+                pos += 1
 
-
-# '''creates the a batch for CNN networks, with Pariwise Labels, 
-# for use with core.pairwise_kl_divergence_full_labels'''
-
-
-# def batch_generator_v2(X, y, batch_size=100, segment_size=100):
-#     segments = X.shape[0]
-#     bs = batch_size
-#     speakers = np.amax(y) + 1
-#     # build as much batches as fit into the training set
-#     while 1:
-#         for i in range((segments + bs - 1) // bs):
-#             Xb = np.zeros((bs, 1, settings.FREQ_ELEMENTS, segment_size), dtype=np.float32)
-#             yb = np.zeros(bs, dtype=np.int32)
-#             # here one batch is generated
-#             for j in range(0, bs):
-#                 speaker_idx = randint(0, len(X) - 1)
-#                 if y is not None:
-#                     yb[j] = y[speaker_idx]
-#                 spect = extract(X[speaker_idx, 0], segment_size)
-#                 seg_idx = randint(0, spect.shape[1] - segment_size)
-#                 Xb[j, 0] = spect[:, seg_idx:seg_idx + segment_size]
-#             yield Xb, create_pairs(yb)
-
+    return X_test[0:len(y_test)].reshape(len(y_test), segment_size, spectrogram_height), np.asarray(y_test, dtype=np.int)
 
 # Batch generator von LSTMS
-def batch_generator_lstm(X, y, batch_size=100, segment_size=15):
+def batch_generator_lstm(X, y, batch_size=100, segment_size=40):
     segments = X.shape[0]
     speakers = np.amax(y) + 1
     
@@ -115,10 +104,11 @@ def batch_generator_lstm(X, y, batch_size=100, segment_size=15):
 
             yield Xb.reshape(batch_size, segment_size, settings.FREQ_ELEMENTS), transformy(yb, batch_size, speakers)
 
+
 # Optimized version of :batch_generator_lstm to adress matching issues when used with
 # high number of classes (>100) to find reasonable comparisons
 #
-def batch_generator_divergence_optimised(X, y, batch_size=100, segment_size=15, spectrogram_height=128):
+def batch_generator_divergence_optimised(X, y, batch_size=100, segment_size=40, spectrogram_height=128):
     segments = X.shape[0]
     bs = batch_size
     speakers = np.amax(y) + 1
@@ -150,30 +140,6 @@ def batch_generator_divergence_optimised(X, y, batch_size=100, segment_size=15, 
             yield Xb.reshape(bs, segment_size, spectrogram_height), transformy(yb, bs, speakers)
 
 
-# '''creates the a batch for LSTM networks, with Pairwise Labels, 
-# for use with core.pairwise_kl_divergence_full_labels'''
-
-
-# def batch_generator_lstm_v2(X, y, batch_size=100, segment_size=15):
-#     segments = X.shape[0]
-#     bs = batch_size
-#     speakers = np.amax(y) + 1
-#     # build as much batches as fit into the training set
-#     while 1:
-#         for i in range((segments + bs - 1) // bs):
-#             Xb = np.zeros((bs, 1, settings.FREQ_ELEMENTS, segment_size), dtype=np.float32)
-#             yb = np.zeros(bs, dtype=np.int32)
-#             # here one batch is generated
-#             for j in range(0, bs):
-#                 speaker_idx = randint(0, len(X) - 1)
-#                 if y is not None:
-#                     yb[j] = y[speaker_idx]
-#                 spect = extract(X[speaker_idx, 0], segment_size)
-#                 seg_idx = randint(0, spect.shape[1] - segment_size)
-#                 Xb[j, 0] = spect[:, seg_idx:seg_idx + segment_size]
-#             yield Xb.reshape(bs, segment_size, settings.FREQ_ELEMENTS), create_pairs(yb)
-
-
 def transformy(y, batch_size, nb_classes):
     yn = np.zeros((batch_size, int(nb_classes)))
     k = 0
@@ -197,39 +163,13 @@ def create_pairs(l):
     return np.vstack(pair_list)
 
 
-# Extracts the provided amount of samples from a Sentence
-# The Samples are randomly chosen for each sentence.
-# Example if there are 8 Sentences for 10 speakers each and the amount of samples is 3
-# The function will return a numpy array Xb with shape 240, 1, 128, 100 and a Numpy array yb with shape 240
-# this is for use in Keras model.fit function (does not yield good Training results)
-def createData(X, y, samples, segment_size=15):
-    segments = X.shape[0]
-    idx = 0
-    Xb = np.zeros((segments * samples, 1, settings.FREQ_ELEMENTS, segment_size), dtype=np.float32)
-    yb = np.zeros(segments * samples, dtype=np.int32)
-    for i in range(segments):
-        # here one batch is generated
-        for j in range(0, samples):
-            speaker_idx = y[i]
-            yb[idx] = speaker_idx
-            spect = extract(X[i, 0], segment_size)
-            seg_idx = randint(0, spect.shape[1] - segment_size)
-            Xb[idx, 0] = spect[:, seg_idx:seg_idx + segment_size]
-            idx += 1
-    shuffle_data(Xb, yb)
-    return Xb, yb
-
-
 # lehl@2019-12-02: Batch generator using h5py dataset and speaker list
 # 
 # Params:
 # batch_type        ['train', 'al', 'val'], for statistics access
 # dataset           DeepVoiceDataset instance containing references to the datasets and statistics
 # 
-def batch_generator_h5(batch_type, dataset, batch_size=100, segment_size=40):
-    # statistics_fun = dataset.get_train_statistics
-    # dataset_fun = dataset.get_train_file
-
+def batch_generator_h5(batch_type, dataset, batch_size=100, segment_size=40, spectrogram_height=128):
     # Calculates the amount of indices used for the given :batch_type across all
     # speakers, such that this equals to the amount of spectrograms available for
     # training
@@ -242,10 +182,13 @@ def batch_generator_h5(batch_type, dataset, batch_size=100, segment_size=40):
     # 
     while 1:
         for i in range((num_segments // batch_size) + 1):
-            Xb = np.zeros((batch_size, 1, settings.FREQ_ELEMENTS, segment_size), dtype=np.float32)
+            Xb = np.zeros((batch_size, spectrogram_height, segment_size), dtype=np.float32)
             yb = np.zeros(batch_size, dtype=np.int32)
 
             for j in range(0, batch_size):
+                # TODO: lehl@2019-12-07: Check with batch_generator_divergence_optimised implementation
+                # (see ZHAW_deep_voice Version before VT1)
+                # 
                 speaker_index = randint(0, num_speakers - 1)
                 speaker_name = all_speakers[speaker_index]
 
@@ -257,16 +200,17 @@ def batch_generator_h5(batch_type, dataset, batch_size=100, segment_size=40):
                 
                 # lehl@2019-12-03: Spectrogram needs to be reshaped with (time_length, 128) and then
                 # transposed as the expected ordering is (128, time_length)
+                # TODO: Can this be improved (check how it's refactored again in return statement)
                 # 
-                spect = full_spect.reshape(full_spect.shape[0] // settings.FREQ_ELEMENTS, settings.FREQ_ELEMENTS).T
+                spect = full_spect.reshape(full_spect.shape[0] // spectrogram_height, spectrogram_height).T
 
                 # Extract random :segment_size long part of the spectrogram
                 # 
                 seg_idx = randint(0, spect.shape[1] - segment_size)
-                Xb[j, 0] = spect[:, seg_idx:seg_idx + segment_size]
+                Xb[j] = spect[:, seg_idx:seg_idx + segment_size]
 
                 # Set label
                 # 
                 yb[j] = speaker_index
 
-            yield Xb.reshape(batch_size, segment_size, settings.FREQ_ELEMENTS), np.eye(num_speakers)[yb]
+            yield Xb.reshape(batch_size, segment_size, spectrogram_height), np.eye(num_speakers)[yb]

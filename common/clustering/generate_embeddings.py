@@ -39,18 +39,22 @@ def _create_utterance_embeddings(num_speakers, vector_size, Xs, ys):
     # Check how many times the least represented class is present
     min_occurance = np.min(np.unique(y, return_counts=True)[1])
 
+    # TODO: lehl@2019-12-07:
+    # Check if min_occurance should be clamped at i.e. 100?
+    # 
+
     embeddings = np.zeros((num_speakers, min_occurance, X.shape[1]))
 
     # Speakers are numbered/labeled from 0 to n-1
     # 
     for i in range(num_speakers):
-        print("Creating Utterance Embeddings for Speaker {}/{}...".format(i+1,num_speakers),end='')
+        # print("Creating Utterance Embeddings for Speaker {}/{}...".format(i+1,num_speakers),end='')
         
         indices = np.where(y == i)[0]
         sampled_indices = np.random.choice(indices, min_occurance, replace=False)
         embeddings[i,:] = np.take(X, sampled_indices, axis=0)
 
-        print('done')
+        # print('done')
 
     # Shape: <NumSpeakers, UtterancesPerSpeaker, EmbeddingLength>
     return embeddings

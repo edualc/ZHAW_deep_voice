@@ -14,7 +14,7 @@ from common.utils.logger import *
 from common.utils.paths import *
 from common.data.dataset import DeepVoiceDataset
 from .bilstm_2layer_dropout_plus_2dense import bilstm_2layer_dropout
-from .core.data_gen import generate_test_data
+from .core.data_gen import generate_test_data_h5
 from common.spectrogram.speaker_train_splitter import SpeakerTrainSplit
 from networks.losses import get_custom_objects, get_loss
 import common.utils.pickler as pickler
@@ -23,8 +23,8 @@ import common.utils.pickler as pickler
 class LSTMVOX2Controller(NetworkController):
     def __init__(self, name, config, dev, best):
         super().__init__(name, config, dev)
-        # self.train_data = config.get('train', 'pickle')
 
+        self.spectrogram_height = config.getint('pairwise_lstm','spectrogram_height')
         self.seg_size = config.getint('pairwise_lstm', 'seg_size')
         self.out_layer = config.getint('pairwise_lstm', 'out_layer')
         self.vec_size = config.getint('pairwise_lstm', 'vec_size')
@@ -32,45 +32,34 @@ class LSTMVOX2Controller(NetworkController):
         self.best = best
         self.dataset = DeepVoiceDataset(self.config)
 
-    # def get_validation_data(self):
-    #     return get_speaker_pickle(self.val_data, ".h5")
-
     def train_network(self):
         bilstm_2layer_dropout(
             self.name,
             segment_size=self.seg_size,
+            spectrogram_height=self.spectrogram_height,
             config=self.config,
             dataset=self.dataset
         )
 
-    # # Loads the validation dataset as '_cluster' and splits it for further use
-    # #
-    # def get_validation_datasets(self):
-    #     train_test_splitter = SpeakerTrainSplit(0.2)
-    #     X, speakers = load_and_prepare_data(self.get_validation_data(), self.seg_size)
-
-    #     X_train, X_test, y_train, y_test = train_test_splitter(X, speakers)
-
-    #     return X_train, y_train, X_test, y_test
-
     def get_embeddings(self):
-        # Passed seg_size parameter is ignored
-        # because it is already used during training and must stay equal
-
         logger = get_logger('lstm_vox', logging.INFO)
         logger.info('Run pairwise_lstm test')
         logger.info('out_layer -> ' + str(self.out_layer))
         logger.info('seg_size -> ' + str(self.seg_size))
         logger.info('vec_size -> ' + str(self.vec_size))
 
-        # Load and prepare train/test data
-        x_train, speakers_train, x_test, speakers_test = self.get_validation_datasets()
+        X_long, speakers_long = generate_test_data_h5('long', self.dataset, self.seg_size, self.spectrogram_height)
+        logger.info('X_long -> ' + str(X_long.shape))
+
+        X_short, speakers_short = generate_test_data_h5('short', self.dataset, self.seg_size, self.spectrogram_height)
+        logger.info('X_short -> ' + str(X_short.shape))
 
         # Prepare return values
         set_of_embeddings = []
         set_of_speakers = []
         speaker_numbers = []
         set_of_utterance_embeddings = []
+        set_of_total_times = []
 
         if self.best:
             file_regex = self.name + ".*_best\.h5"
@@ -84,7 +73,6 @@ class LSTMVOX2Controller(NetworkController):
         loss = get_loss(self.config)
         custom_objects = get_custom_objects(self.config)
         optimizer = 'rmsprop'
-        set_of_total_times = []
 
         # Fill return values
         for checkpoint in checkpoints:
@@ -106,16 +94,17 @@ class LSTMVOX2Controller(NetworkController):
                 # Get a Model with the embedding layer as output and predict
                 model_partial = Model(inputs=model_full.input, outputs=model_full.layers[self.out_layer].output)
 
-                logger.info('running predict on test set')
-                test_output = np.asarray(model_partial.predict(x_test))
                 logger.info('running predict on train set')
-                train_output = np.asarray(model_partial.predict(x_train))
-                logger.info('test_output len -> ' + str(test_output.shape))
-                logger.info('train_output len -> ' + str(train_output.shape))
+                output_long = np.asarray(model_partial.predict(X_long))
+                logger.info('output_long len -> ' + str(output_long.shape))
+                
+                logger.info('running predict on test set')
+                output_short = np.asarray(model_partial.predict(X_short))
+                logger.info('output_short len -> ' + str(output_short.shape))
 
                 embeddings, speakers, num_embeddings, utterance_embeddings = generate_embeddings(
-                    [train_output, test_output], [speakers_train,
-                    speakers_test], self.vec_size
+                    [output_long, output_short], [speakers_long,
+                    speakers_short], self.vec_size
                 )
 
                 pickler.save((embeddings, speakers, num_embeddings, utterance_embeddings), checkpoint_result_pickle)
@@ -127,8 +116,8 @@ class LSTMVOX2Controller(NetworkController):
             set_of_utterance_embeddings.append(utterance_embeddings)
 
             # Calculate the time per utterance
-            time = TimeCalculator.calc_time_all_utterances([speakers_train, speakers_test], self.seg_size)
-            set_of_total_times.append(time)
+            calculated_time = TimeCalculator.calc_time_all_utterances([speakers_long, speakers_short], self.seg_size)
+            set_of_total_times.append(calculated_time)
 
         # Add out_layer to checkpoint names
         checkpoints = list(map(lambda x: x.split('.')[0] + '__ol' + str(self.out_layer) + '.' + x.split('.')[1], checkpoints))
@@ -136,12 +125,3 @@ class LSTMVOX2Controller(NetworkController):
 
         logger.info('Pairwise_lstm test done.')
         return checkpoints, set_of_embeddings, set_of_speakers, speaker_numbers, set_of_total_times, set_of_utterance_embeddings
-
-
-# def load_and_prepare_data(data_path, segment_size):
-#     # Load and generate test data
-#     (X, y, _) = pickler.load_speaker_pickle_or_h5(data_path)
-#     X, speakers = generate_test_data(X, y, segment_size)
-
-#     # Reshape test data because it is an lstm
-#     return X.reshape(X.shape[0], X.shape[3], X.shape[2]), speakers

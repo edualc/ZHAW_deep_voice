@@ -39,13 +39,13 @@ from wandb.keras import WandbCallback
     epochs: Number of Epochs to train the Network per ActiveLearningRound
     activeLearnerRounds: Number of learning rounds to requery the pool for new data
     segment_size: Segment size that is used as input 100 equals 1 second with current Spectrogram extraction
-    frequency: size of the frequency Dimension of the Input Spectrogram
+    spectrogram_height: size of the frequency Dimension of the Input Spectrogram
 
     Work of Gerber and Glinski.
 '''
 
 class bilstm_2layer_dropout(object):
-    def __init__(self, name, segment_size, config, dataset):
+    def __init__(self, name, segment_size, spectrogram_height, config, dataset):
         self.network_name = name
         self.config = config
         self.dataset = dataset
@@ -58,8 +58,8 @@ class bilstm_2layer_dropout(object):
         self.n_speakers = config.getint('train', 'n_speakers')
         self.epochs = config.getint('train', 'n_epochs')
         self.segment_size = segment_size
-        self.frequency = self.config.getint('pairwise_lstm','spectrogram_height')
-        self.input = (self.segment_size, self.frequency)
+        self.spectrogram_height = spectrogram_height
+        self.input = (self.segment_size, self.spectrogram_height)
         
         # Initialize WandB
         self.wandb_run = wandb.init(
@@ -153,8 +153,8 @@ class bilstm_2layer_dropout(object):
         return [csv_logger, info_logger, net_saver, net_checkpoint, plot_callback_instance, wandb_callback]
 
     def fit(self, model, callbacks, epochs_to_run):
-        train_gen = dg.batch_generator_h5('train', self.dataset, batch_size=100, segment_size=self.segment_size)
-        val_gen = dg.batch_generator_h5('val', self.dataset, batch_size=100, segment_size=self.segment_size)
+        train_gen = dg.batch_generator_h5('train', self.dataset, batch_size=100, segment_size=self.segment_size, spectrogram_height=self.spectrogram_height)
+        val_gen = dg.batch_generator_h5('val', self.dataset, batch_size=100, segment_size=self.segment_size, spectrogram_height=self.spectrogram_height)
 
         history = model.fit_generator(
             train_gen,

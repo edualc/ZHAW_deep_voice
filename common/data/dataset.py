@@ -182,6 +182,21 @@ class DeepVoiceDataset():
       )
     )
 
+  # Returns the amount of spectrograms available during testing
+  # 
+  def get_test_num_segments(self, test_type):
+    self.__check_test_type(test_type)
+
+    return sum(
+      map(
+        lambda x: x.shape[0],
+        map(
+          lambda y: self.get_test_statistics()[y][test_type],
+          self.get_test_statistics()
+        )
+      )
+    )
+
   def update_active_learning_share(self, utterances_change):
     statistics = self.get_train_statistics()
 
@@ -214,3 +229,10 @@ class DeepVoiceDataset():
 
     else:
       raise AttributeError('Unknown :train_type, should be "train", "al" or "val".')
+
+  def __check_test_type(self, test_type):
+    if test_type in ['all','short','long']:
+      return True
+
+    else:
+      raise AttributeError('Unknown :test_type, should be "all", "short" or "long".')
