@@ -2,6 +2,7 @@ from common.analysis.metrics.acp import average_cluster_purity
 from common.analysis.metrics.ari import adjusted_rand_index
 from common.analysis.metrics.der import diarization_error_rate
 import numpy as np
+from tqdm import tqdm
 
 from scipy.optimize import brentq
 from scipy.interpolate import interp1d
@@ -50,7 +51,7 @@ def analyse_results(network_name, checkpoint_names, set_of_predicted_clusters,
             eer_result = _calculate_eer_result(set_of_utterance_embeddings[index])
             save((metric_results, eer_result), analysis_pickle)
 
-        print('\tModel: {}, EER: {}'.format(checkpoint, round(eer_result,5)))
+        logger.info("\tEER: {}".format(round(eer_result,5)))
 
         for m, metric_result in enumerate(metric_results):
             metric_sets[m][index] = metric_result
@@ -185,9 +186,7 @@ def _calculate_analysis_values(predicted_clusters, true_cluster, times):
             metric_results[m] = np.zeros((len(true_cluster)))
 
     # Loop over all possible clustering
-    for i, predicted_cluster in enumerate(predicted_clusters):
-        # logger.info('Calculated Scores for {}/{} predicted clusters'.format(i+1, len(predicted_clusters)))
-
+    for i, predicted_cluster in enumerate(tqdm(predicted_clusters, ncols=100, desc='Calculate scores for predicted clusters...')):
         # Calculate different analysis's
         metric_results[0][i] = misclassification_rate(true_cluster, predicted_cluster)
         metric_results[1][i] = average_cluster_purity(true_cluster, predicted_cluster)
@@ -228,6 +227,6 @@ def _save_best_results(network_name, checkpoint_names, metric_sets, speaker_numb
 
 
 def _write_result_pickle(network_name, checkpoint_names, metric_sets, number_of_embeddings):
-    logger = get_logger('analysis', logging.INFO)
-    logger.info('Write result pickle')
+    # logger = get_logger('analysis', logging.INFO)
+    # logger.info('Write result pickle')
     save((checkpoint_names, metric_sets, number_of_embeddings), get_result_pickle(network_name))

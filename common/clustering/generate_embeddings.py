@@ -1,4 +1,5 @@
 import numpy as np
+from tqdm import tqdm
 
 from common.utils.logger import *
 
@@ -47,14 +48,10 @@ def _create_utterance_embeddings(num_speakers, vector_size, Xs, ys):
 
     # Speakers are numbered/labeled from 0 to n-1
     # 
-    for i in range(num_speakers):
-        # print("Creating Utterance Embeddings for Speaker {}/{}...".format(i+1,num_speakers),end='')
-        
+    for i in tqdm(range(num_speakers), ncols=100, desc='creating utterance embeddings...'):
         indices = np.where(y == i)[0]
         sampled_indices = np.random.choice(indices, min_occurance, replace=False)
         embeddings[i,:] = np.take(X, sampled_indices, axis=0)
-
-        # print('done')
 
     # Shape: <NumSpeakers, UtterancesPerSpeaker, EmbeddingLength>
     return embeddings

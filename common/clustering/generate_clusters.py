@@ -21,8 +21,6 @@ def cluster_embeddings(set_of_embeddings, set_of_true_clusters, dominant_sets=Fa
 
     set_predicted_clusters = []
 
-    # import code; code.interact(local=dict(globals(), **locals()))
-
     for embeddings, true_clusters in zip(set_of_embeddings, set_of_true_clusters):
         if dominant_sets:
             predicted_clusters = []

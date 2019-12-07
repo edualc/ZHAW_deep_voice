@@ -1,7 +1,6 @@
 import pickle
 import numpy as np
 import h5py
-from tqdm import tqdm
 
 import keras
 from keras import backend
@@ -64,8 +63,7 @@ class bilstm_2layer_dropout(object):
         # Initialize WandB
         self.wandb_run = wandb.init(
             group=config.get('wandb','group'),
-            project=config.get('wandb','project_name'),
-            job_type=config.get('wandb','job_type')
+            project=config.get('wandb','project_name')
         )
 
         # Initializes Active Learning if necessary
