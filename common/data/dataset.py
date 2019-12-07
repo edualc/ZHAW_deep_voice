@@ -10,6 +10,8 @@ class DeepVoiceDataset():
       self.config = config
       self.data = dict()
 
+      # Initialize Statistics
+      # 
       self.get_train_statistics()
       self.get_test_statistics()
 

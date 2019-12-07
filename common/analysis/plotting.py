@@ -9,14 +9,14 @@ metric_names = ["MR", "ACP", "ARI", "DER"]
 metric_worst_values = [1,0,0,1]
 
 
-def plot_files(plot_file_name, files):
+def plot_files(plot_file_name, files, config):
     """
     Plots the results stored in the files given and stores them in a file with the given name
     :param plot_file_name: the file name stored in common/data/results
     :param files: a set of full file paths that hold result data
     """
     curve_names, metric_sets, set_of_number_of_embeddings = _read_result_pickle(files)
-    _plot_curves(plot_file_name, curve_names, metric_sets, set_of_number_of_embeddings)
+    _plot_curves(plot_file_name, curve_names, metric_sets, set_of_number_of_embeddings, config)
 
 
 def _read_result_pickle(files):
@@ -46,7 +46,7 @@ def _read_result_pickle(files):
     return curve_names_all_files, metric_sets_all_files, number_of_embeddings_all_files
 
 
-def _plot_curves(plot_file_name, curve_names, metric_sets, number_of_embeddings):
+def _plot_curves(plot_file_name, curve_names, metric_sets, number_of_embeddings, config):
     """
     Plots all specified curves and saves the plot into a file.
     :param plot_file_name: String value of save file name
@@ -56,12 +56,12 @@ def _plot_curves(plot_file_name, curve_names, metric_sets, number_of_embeddings)
     """
     maximum_clusters_to_display = number_of_embeddings[0]
 
-    # TODO: Grab config and check if :short_utterances is set
+    # Check if :short_utterances is set
     # ==> If so, only go up to 20% of the maximum clusters
-    # ==> Is it always 20%?
+    # ==> TODO: Is it always 20%?
     # 
-    # if short_utterances?:
-    #     maximum_clusters_to_display *= 0.2
+    if config.getboolean('test','short_utterances'):
+        maximum_clusters_to_display *= 0.2
 
     logger = get_logger('analysis', logging.INFO)
     logger.info('Plot results')
@@ -119,9 +119,7 @@ def _plot_curves(plot_file_name, curve_names, metric_sets, number_of_embeddings)
                                                   str(best_results[m][index]))
         color = colors[index]
 
-        # lehl@2019-11-17:  POTENTIAL FATAL ERROR
-        # It looks like the numbering for the plots is created backwards, i.e.
-        # if it should be from 1 to N this returns a list from N to 1!
+        # Numbering is backwards as this is how the clusters are evaluated
         # 
         number_of_clusters = np.arange(maximum_clusters_to_display, 0, -1)
 

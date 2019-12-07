@@ -73,7 +73,7 @@ class Controller:
     def plot_results(self):
         for network_controller in self.network_controllers:
             name = network_controller.name
-            plot_files(name, get_result_files(name, self.best))
+            plot_files(name, get_result_files(name, self.best), self.config)
 
     def run(self):
         # Setup
