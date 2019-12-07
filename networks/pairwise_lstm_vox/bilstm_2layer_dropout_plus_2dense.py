@@ -3,8 +3,6 @@ import numpy as np
 import h5py
 from tqdm import tqdm
 
-np.random.seed(1337)  # for reproducibility
-
 import keras
 from keras import backend
 from keras.models import Sequential
@@ -47,54 +45,57 @@ from wandb.keras import WandbCallback
 
 
 class bilstm_2layer_dropout(object):
-    def __init__(self, name, training_data, n_hidden1, n_hidden2, dense_factor, n_speakers,
-                 epochs, epochs_before_active_learning, active_learning_rounds,
-                 segment_size, config, frequency=128):
-
+    def __init__(self, name, segment_size, config, dataset):
         self.network_name = name
-        self.training_data = training_data
-        self.n_hidden1 = n_hidden1
-        self.n_hidden2 = n_hidden2
-        self.dense_factor = dense_factor
-        self.n_speakers = n_speakers
-        self.epochs = epochs
-
+        self.config = config
+        self.dataset = dataset
+        
+        # Setup Logging
         self.logger = get_logger('lstm_vox', logging.INFO)
         self.logger.info(self.network_name)
         
+        # Network configuration
+        self.n_speakers = config.getint('train', 'n_speakers')
+        self.epochs = config.getint('train', 'n_epochs')
+        self.segment_size = segment_size
+        self.frequency = self.config.getint('pairwise_lstm','spectrogram_height')
+        self.input = (self.segment_size, self.frequency)
+        
+        # Initialize WandB
         self.wandb_run = wandb.init(
             group=config.get('wandb','group'),
-            project=config.get('wandb','project_name')
+            project=config.get('wandb','project_name'),
+            job_type=config.get('wandb','job_type')
         )
 
         # Initializes Active Learning if necessary
-        if active_learning_rounds == 0:
-            self.epochs_before_active_learning = epochs
-        else:
-            self.epochs_before_active_learning = epochs_before_active_learning
+        if self.config.getboolean('active_learning','enabled'):
+            self.epochs_before_active_learning = config.getint('active_learning', 'epochs_before_al')
+            self.active_learning_rounds = config.getint('active_learning', 'al_rounds')
             self.active_learner = al.active_learner(
                 logger=self.logger,
-                n_instances=128,
+                config=self.config,
                 segment_size=segment_size,
-                training_data=training_data,
-                epochs=epochs,
-                epochs_per_round=ceil((epochs - epochs_before_active_learning) / active_learning_rounds)
+                spectrogram_height=config.getint('pairwise_lstm','spectrogram_height'),
+                dataset=self.dataset,
+                epochs=self.epochs,
+                epochs_per_round=ceil((self.epochs - self.epochs_before_active_learning) / self.active_learning_rounds)
             )
-
-        self.active_learning_rounds = active_learning_rounds
-
-        self.segment_size = segment_size
-        self.input = (segment_size, frequency)
-
-        self.config = config
+        else:
+            self.epochs_before_active_learning = self.epochs
 
         wandb.config.update({
-            'n_hidden1': self.n_hidden1, 'n_hidden2': self.n_hidden2, 'dense_factor': self.dense_factor,
+            'n_hidden1': config.getint('pairwise_lstm', 'n_hidden1'),
+            'n_hidden2': config.getint('pairwise_lstm', 'n_hidden2'),
+            'dense_factor': config.getint('pairwise_lstm', 'dense_factor'),
             'epochs': self.epochs,
             'epochs_before_al': self.epochs_before_active_learning,
             'segment_size': self.segment_size,
-            'learning_rate': 0.001,
-            'beta_1': 0.9, 'beta_2': 0.999, 'epsilon': 1e-08, 'decay': 0.0
+            'learning_rate': self.config.getfloat('pairwise_lstm', 'adam_lr'),
+            'beta_1': self.config.getfloat('pairwise_lstm', 'adam_beta_1'),
+            'beta_2': self.config.getfloat('pairwise_lstm', 'adam_beta_2'),
+            'epsilon': self.config.getfloat('pairwise_lstm', 'adam_epsilon'),
+            'decay': self.config.getfloat('pairwise_lstm', 'adam_decay')
         })
 
         self.run_network()
@@ -102,13 +103,13 @@ class bilstm_2layer_dropout(object):
     def create_net(self):
         model = Sequential()
 
-        model.add(Bidirectional(LSTM(self.n_hidden1, return_sequences=True), input_shape=self.input))
+        model.add(Bidirectional(LSTM(wandb.config.n_hidden1, return_sequences=True), input_shape=self.input))
         model.add(Dropout(0.50))
-        model.add(Bidirectional(LSTM(self.n_hidden2)))
+        model.add(Bidirectional(LSTM(wandb.config.n_hidden2)))
 
-        model.add(Dense(self.dense_factor * 10))
+        model.add(Dense(wandb.config.dense_factor * 10))
         model.add(Dropout(0.25))
-        model.add(Dense(self.dense_factor * 5))
+        model.add(Dense(wandb.config.dense_factor * 5))
         add_final_layers(model, self.config)
 
         loss_function = get_loss(self.config)
@@ -126,10 +127,10 @@ class bilstm_2layer_dropout(object):
 
         return model
 
-    def split_train_val_data(self, X, y):
-        splitter = sts.SpeakerTrainSplit(0.2)
-        X_t, X_v, y_t, y_v = splitter(X, y)
-        return X_t, y_t, X_v, y_v
+    # def split_train_val_data(self, X, y):
+    #     splitter = sts.SpeakerTrainSplit(0.2)
+    #     X_t, X_v, y_t, y_v = splitter(X, y)
+    #     return X_t, y_t, X_v, y_v
 
     def create_callbacks(self):
         csv_logger = keras.callbacks.CSVLogger(
@@ -148,18 +149,8 @@ class bilstm_2layer_dropout(object):
         return [csv_logger, info_logger, net_saver, net_checkpoint, plot_callback_instance, wandb_callback]
 
     def fit(self, model, callbacks, epochs_to_run):
-        # Ensure statistics are initialized/memoized
-        # 
-        self.get_training_statistics()
-        self.get_dataset_file()
-
-        # Pass function handles to generators
-        # 
-        train_statistics = self.get_training_statistics
-        dataset_file = self.get_dataset_file
-
-        train_gen = dg.batch_generator_h5(train_statistics, 'train', dataset_file, batch_size=100, segment_size=self.segment_size)
-        val_gen = dg.batch_generator_h5(train_statistics, 'val', dataset_file, batch_size=100, segment_size=self.segment_size)
+        train_gen = dg.batch_generator_h5('train', self.dataset, batch_size=100, segment_size=self.segment_size)
+        val_gen = dg.batch_generator_h5('val', self.dataset, batch_size=100, segment_size=self.segment_size)
 
         # # Original Batch Generator
         # train_gen = dg.batch_generator_lstm(X_t, y_t, 100, segment_size=self.segment_size)
@@ -197,20 +188,15 @@ class bilstm_2layer_dropout(object):
         # del y_pool
 
         # initial train
-        if self.epochs_before_active_learning != 0:
+        if self.epochs_before_active_learning > 0:
             self.fit(model, callbacks, self.epochs_before_active_learning)
 
         # active learning
-        if self.active_learning_rounds != 0:
-            # active learning
+        if self.config.getboolean('active_learning','enabled'):
             model = self.active_learner.perform_active_learning(
                 active_learning_rounds=self.active_learning_rounds,
                 epochs_trained= self.epochs_before_active_learning,
                 model=model,
-                X_t=X_t,
-                y_t=y_t,
-                X_v=X_v,
-                y_v=y_v,
                 callbacks=callbacks,
                 network=self
             )
@@ -218,93 +204,14 @@ class bilstm_2layer_dropout(object):
         self.logger.info("saving model")
         model.save(get_experiment_nets(self.network_name + ".h5"))
 
-    # Reads the speaker data from a given speaker pickle or h5
-    # 
-    # Paramters:
-    # speaker_pickle: Location of speaker pickle/h5 file
-    #
-    # Returns: The unpacked file (Features, Labels, Speakerident List)
-    #
-    def _read_speaker_data(self, speaker_pickle):
-        self.logger.info('create_train_data ' + speaker_pickle)
-        (X, y, _) = load_speaker_pickle_or_h5(speaker_pickle)
-        return (X, y, speaker_pickle)
-
-
-    #
-    #
-    # ===================================================================================
-    # TODO: Refactor into own files to be used in all networks during training
-    # ===================================================================================
-    # 
-    # 
-    # 
-    # @MEMOIZED
-    # On initial execution the h5py file gets accessed.
-    # The dataset has the attributes :audio_names, :statistics and :data
-    # 
-    def get_dataset_file(self):
-        try:
-            return self.dataset_file
-        except AttributeError:
-            dataset_path = self.config.get('train','dataset') + '.h5'
-            self.dataset_file = h5py.File(dataset_path, 'r')
-            
-            return self.dataset_file
-
-    # @MEMOIZED
-    # Returns the speaker list given for the TRAINING part
-    # 
-    def get_dataset_speaker_list(self):
-        try:
-            return self.dataset_speaker_list
-        except AttributeError:
-            speaker_list_path = get_speaker_list(self.config.get('train','speaker_list'))
-            self.dataset_speaker_list = [line.rstrip('\n') for line in open(speaker_list_path)] 
-
-            return self.dataset_speaker_list
-
-    # @MEMOIZED
-    # Returns a dict containing the indices for each speaker that are used in while training
-    # either for training (:train) or validation (:val) and the ratio of the validation share
-    # compared to all speaker files (:val_share)
-    #  
-    def get_training_statistics(self):
-        try:
-            return self.training_data_statistics
-        except AttributeError:
-            self.training_data_statistics = {}
-            data_file = self.get_dataset_file()
-
-            for speaker in tqdm(self.get_dataset_speaker_list(), ncols=100, desc='split training and validation data'):
-                train_indices = []
-                val_indices = []
-                amount_of_files = data_file['statistics/' + speaker].shape[0]
-
-                # How of the training data is used for validation
-                validation_share = self.config.getfloat('train','validation_share')
-
-                total_speaker_time = np.sum(data_file['statistics/'+ speaker])
-                cumulative_sum = np.cumsum(data_file['statistics/'+ speaker])
-
-                # Calculate which is the first index of files that is, an 
-                # extra +1 is added to include the cut_off_index file in the training,
-                # otherwise it would be "AT LEAST" validation_share of the dataset
-                # in the validation set
-                # 
-                cut_off_index = np.where(cumulative_sum > total_speaker_time * (1 - validation_share))[0][0] + 1
-
-                train_indices = np.arange(cut_off_index)
-                val_indices = np.arange(cut_off_index, data_file['statistics/' + speaker].shape[0])
-
-                # Create speaker dict
-                self.training_data_statistics[speaker] = {
-                    'train': train_indices,
-                    'val': val_indices,
-                    'val_share': np.sum(data_file['statistics/'+ speaker][cut_off_index:] / total_speaker_time)
-                }
-
-            return self.training_data_statistics
-
-    def get_num_segments(self, train_type):
-        return sum(map(lambda x: x.shape[0], (map(lambda x: self.get_training_statistics()[x][train_type], self.get_training_statistics()))))
+    # # Reads the speaker data from a given speaker pickle or h5
+    # # 
+    # # Paramters:
+    # # speaker_pickle: Location of speaker pickle/h5 file
+    # #
+    # # Returns: The unpacked file (Features, Labels, Speakerident List)
+    # #
+    # def _read_speaker_data(self, speaker_pickle):
+    #     self.logger.info('create_train_data ' + speaker_pickle)
+    #     (X, y, _) = load_speaker_pickle_or_h5(speaker_pickle)
+    #     return (X, y, speaker_pickle)

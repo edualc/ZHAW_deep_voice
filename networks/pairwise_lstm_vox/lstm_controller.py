@@ -12,6 +12,7 @@ from common.network_controller import NetworkController
 from common.utils import TimeCalculator
 from common.utils.logger import *
 from common.utils.paths import *
+from common.data.dataset import DeepVoiceDataset
 from .bilstm_2layer_dropout_plus_2dense import bilstm_2layer_dropout
 from .core.data_gen import generate_test_data
 from common.spectrogram.speaker_train_splitter import SpeakerTrainSplit
@@ -21,53 +22,36 @@ import common.utils.pickler as pickler
 
 class LSTMVOX2Controller(NetworkController):
     def __init__(self, name, config, dev, best):
-        super().__init__(name, config, dev) #"vox2_speakers_120_test_cluster"
+        super().__init__(name, config, dev)
+        # self.train_data = config.get('train', 'pickle')
 
-        # Currently prepared speaker_lists have the following datasets:
-        #
-        # 'vox2_speakers_5994_dev_cluster', # _train suffix for train/test split, _cluster otherwise
-        # 'vox2_speakers_5994_dev_600_base', # _train suffix for train/test split, _cluster otherwise
-        # 'vox2_speakers_120_test_cluster', # _train suffix for train/test split, _cluster otherwise
-        # 'vox2_speakers_10_test_cluster', # _train suffix for train/test split, _cluster otherwise
-        #
-        self.train_data = config.get('train', 'pickle')
-        self.dense_factor = config.getint('pairwise_lstm_vox2', 'dense_factor')
-        self.n_speakers = config.getint('train', 'n_speakers')
-        self.epochs = config.getint('pairwise_lstm_vox2', 'num_epochs')
-        self.epochs_before_active_learning = config.getint('pairwise_lstm_vox2', 'epochs_before_al')
-        self.active_learning_rounds = config.getint('pairwise_lstm_vox2', 'al_rounds')
-        self.seg_size = config.getint('pairwise_lstm_vox2', 'seg_size')
-        self.out_layer = config.getint('pairwise_lstm_vox2', 'out_layer')
-        self.vec_size = config.getint('pairwise_lstm_vox2', 'vec_size')
+        self.seg_size = config.getint('pairwise_lstm', 'seg_size')
+        self.out_layer = config.getint('pairwise_lstm', 'out_layer')
+        self.vec_size = config.getint('pairwise_lstm', 'vec_size')
+        
         self.best = best
+        self.dataset = DeepVoiceDataset(self.config)
 
-    def get_validation_data(self):
-        return get_speaker_pickle(self.val_data, ".h5")
+    # def get_validation_data(self):
+    #     return get_speaker_pickle(self.val_data, ".h5")
 
     def train_network(self):
         bilstm_2layer_dropout(
             self.name,
-            self.train_data,
-            n_hidden1=256,
-            n_hidden2=256,
-            dense_factor=self.dense_factor,
-            n_speakers=self.n_speakers,
-            epochs=self.epochs,
-            epochs_before_active_learning=self.epochs_before_active_learning,
-            active_learning_rounds=self.active_learning_rounds,
             segment_size=self.seg_size,
-            config=self.config
+            config=self.config,
+            dataset=self.dataset
         )
 
-    # Loads the validation dataset as '_cluster' and splits it for further use
-    #
-    def get_validation_datasets(self):
-        train_test_splitter = SpeakerTrainSplit(0.2)
-        X, speakers = load_and_prepare_data(self.get_validation_data(), self.seg_size)
+    # # Loads the validation dataset as '_cluster' and splits it for further use
+    # #
+    # def get_validation_datasets(self):
+    #     train_test_splitter = SpeakerTrainSplit(0.2)
+    #     X, speakers = load_and_prepare_data(self.get_validation_data(), self.seg_size)
 
-        X_train, X_test, y_train, y_test = train_test_splitter(X, speakers)
+    #     X_train, X_test, y_train, y_test = train_test_splitter(X, speakers)
 
-        return X_train, y_train, X_test, y_test
+    #     return X_train, y_train, X_test, y_test
 
     def get_embeddings(self):
         # Passed seg_size parameter is ignored
@@ -154,10 +138,10 @@ class LSTMVOX2Controller(NetworkController):
         return checkpoints, set_of_embeddings, set_of_speakers, speaker_numbers, set_of_total_times, set_of_utterance_embeddings
 
 
-def load_and_prepare_data(data_path, segment_size):
-    # Load and generate test data
-    (X, y, _) = pickler.load_speaker_pickle_or_h5(data_path)
-    X, speakers = generate_test_data(X, y, segment_size)
+# def load_and_prepare_data(data_path, segment_size):
+#     # Load and generate test data
+#     (X, y, _) = pickler.load_speaker_pickle_or_h5(data_path)
+#     X, speakers = generate_test_data(X, y, segment_size)
 
-    # Reshape test data because it is an lstm
-    return X.reshape(X.shape[0], X.shape[3], X.shape[2]), speakers
+#     # Reshape test data because it is an lstm
+#     return X.reshape(X.shape[0], X.shape[3], X.shape[2]), speakers
