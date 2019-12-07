@@ -11,6 +11,7 @@ from keras.layers import LSTM
 from keras.layers import CuDNNLSTM
 from keras.layers.wrappers import Bidirectional
 from keras.wrappers.scikit_learn import KerasClassifier
+from keras import regularizers
 from math import ceil
 
 from .core import data_gen as dg
@@ -87,6 +88,8 @@ class bilstm_2layer_dropout(object):
         wandb.config.update({
             'n_hidden1': config.getint('pairwise_lstm', 'n_hidden1'),
             'n_hidden2': config.getint('pairwise_lstm', 'n_hidden2'),
+            'n_dense1': config.getint('pairwise_lstm', 'n_dense1'),
+            'n_dense2': config.getint('pairwise_lstm', 'n_dense2'),
             'dense_factor': config.getint('pairwise_lstm', 'dense_factor'),
             'epochs': self.epochs,
             'epochs_before_al': self.epochs_before_active_learning,
@@ -103,13 +106,20 @@ class bilstm_2layer_dropout(object):
     def create_net(self):
         model = Sequential()
 
-        model.add(Bidirectional(LSTM(wandb.config.n_hidden1, return_sequences=True), input_shape=self.input))
-        model.add(Dropout(0.50))
-        model.add(Bidirectional(LSTM(wandb.config.n_hidden2)))
+        if self.config.getboolean('pairwise_lstm','lstm_kernel_regularization'):
+            model.add(Bidirectional(LSTM(wandb.config.n_hidden1, return_sequences=True,
+                kernel_regularizer=regularizers.l1_l2(l1=0.01, l2=0.01)), input_shape=self.input))
+            model.add(Dropout(0.50))
+            model.add(Bidirectional(LSTM(wandb.config.n_hidden2,
+                kernel_regularizer=regularizers.l1_l2(l1=0.01, l2=0.01))))
+        else:
+            model.add(Bidirectional(LSTM(wandb.config.n_hidden1, return_sequences=True), input_shape=self.input))
+            model.add(Dropout(0.50))
+            model.add(Bidirectional(LSTM(wandb.config.n_hidden2)))
 
-        model.add(Dense(wandb.config.dense_factor * 10))
+        model.add(Dense(wandb.config.n_dense1))
         model.add(Dropout(0.25))
-        model.add(Dense(wandb.config.dense_factor * 5))
+        model.add(Dense(wandb.config.n_dense2))
         add_final_layers(model, self.config)
 
         loss_function = get_loss(self.config)

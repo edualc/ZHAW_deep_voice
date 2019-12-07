@@ -27,7 +27,10 @@ def get_loss(config):
         return AngularLoss(config).angular_loss
     elif config.get('train', 'loss') == 'kldiv_orig':
         return orig_pairwise_kl_divergence
-    return pairwise_kl_divergence
+    elif config.get('train', 'loss') == 'pairwise_kldiv':
+        return pairwise_kl_divergence
+    else:
+        return pairwise_kl_divergence
 
 def add_final_layers(model, config):
     if config.get('train', 'loss') == 'angular_margin':
