@@ -137,7 +137,10 @@ class bilstm_2layer_dropout(object):
         return model
 
     def create_callbacks(self):
-        net_saver = keras.callbacks.ModelCheckpoint(get_experiment_nets(self.network_name + "_best.h5"),monitor='val_loss', verbose=1, save_best_only=True)
+        net_saver = keras.callbacks.ModelCheckpoint(
+            get_experiment_nets(self.network_name + "_best.h5"),
+            monitor='val_loss', verbose=1, save_best_only=True)
+        
         net_checkpoint = ActiveLearningModelCheckpoint(
             get_experiment_nets(self.network_name + "_{epoch:05d}.h5"),
             period=int(self.epochs / 3)
