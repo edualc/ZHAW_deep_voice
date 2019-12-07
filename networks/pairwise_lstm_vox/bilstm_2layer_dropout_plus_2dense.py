@@ -44,7 +44,6 @@ from wandb.keras import WandbCallback
     Work of Gerber and Glinski.
 '''
 
-
 class bilstm_2layer_dropout(object):
     def __init__(self, name, segment_size, config, dataset):
         self.network_name = name
@@ -137,11 +136,6 @@ class bilstm_2layer_dropout(object):
 
         return model
 
-    # def split_train_val_data(self, X, y):
-    #     splitter = sts.SpeakerTrainSplit(0.2)
-    #     X_t, X_v, y_t, y_v = splitter(X, y)
-    #     return X_t, y_t, X_v, y_v
-
     def create_callbacks(self):
         csv_logger = keras.callbacks.CSVLogger(
             get_experiment_logs(self.network_name + '.csv'))
@@ -162,14 +156,6 @@ class bilstm_2layer_dropout(object):
         train_gen = dg.batch_generator_h5('train', self.dataset, batch_size=100, segment_size=self.segment_size)
         val_gen = dg.batch_generator_h5('val', self.dataset, batch_size=100, segment_size=self.segment_size)
 
-        # # Original Batch Generator
-        # train_gen = dg.batch_generator_lstm(X_t, y_t, 100, segment_size=self.segment_size)
-        # val_gen = dg.batch_generator_lstm(X_v, y_v, 100, segment_size=self.segment_size)
-
-        # # Alternative Batch Generator
-        # train_gen = dg.batch_generator_divergence_optimised(X_t, y_t, 100, segment_size=self.segment_size)
-        # val_gen = dg.batch_generator_divergence_optimised(X_v, y_v, 100, segment_size=self.segment_size)
-
         history = model.fit_generator(
             train_gen,
             steps_per_epoch=10,
@@ -189,14 +175,6 @@ class bilstm_2layer_dropout(object):
         model = self.create_net()
         callbacks = self.create_callbacks()
 
-        # # initial train set
-        # speaker_pickle = get_speaker_pickle(self.training_data, format='.h5')
-        # X_pool, y_pool, _ = self._read_speaker_data(speaker_pickle)
-        # X_t, y_t, X_v, y_v = self.split_train_val_data(X_pool, y_pool)
-
-        # del X_pool
-        # del y_pool
-
         # initial train
         if self.epochs_before_active_learning > 0:
             self.fit(model, callbacks, self.epochs_before_active_learning)
@@ -213,15 +191,3 @@ class bilstm_2layer_dropout(object):
 
         self.logger.info("saving model")
         model.save(get_experiment_nets(self.network_name + ".h5"))
-
-    # # Reads the speaker data from a given speaker pickle or h5
-    # # 
-    # # Paramters:
-    # # speaker_pickle: Location of speaker pickle/h5 file
-    # #
-    # # Returns: The unpacked file (Features, Labels, Speakerident List)
-    # #
-    # def _read_speaker_data(self, speaker_pickle):
-    #     self.logger.info('create_train_data ' + speaker_pickle)
-    #     (X, y, _) = load_speaker_pickle_or_h5(speaker_pickle)
-    #     return (X, y, speaker_pickle)
