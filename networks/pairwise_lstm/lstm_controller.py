@@ -20,7 +20,7 @@ from networks.losses import get_custom_objects, get_loss
 import common.utils.pickler as pickler
 
 
-class LSTMVOX2Controller(NetworkController):
+class LSTMController(NetworkController):
     def __init__(self, name, config, dev, best):
         super().__init__(name, config, dev)
 
@@ -42,7 +42,7 @@ class LSTMVOX2Controller(NetworkController):
         )
 
     def get_embeddings(self):
-        logger = get_logger('lstm_vox', logging.INFO)
+        logger = get_logger('pairwise_lstm', logging.INFO)
         logger.info('Run pairwise_lstm test')
         logger.info('out_layer -> ' + str(self.out_layer))
         logger.info('seg_size -> ' + str(self.seg_size))

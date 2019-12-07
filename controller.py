@@ -113,9 +113,6 @@ class Controller:
             elif network == 'gmm':
                 from networks.gmm.gmm_controller import GMMController
                 self.network_controllers.append(GMMController(self.config, self.dev))
-            elif network == 'pairwise_lstm_vox2':
-                from networks.pairwise_lstm_vox.lstm_controller import LSTMVOX2Controller
-                self.network_controllers.append(LSTMVOX2Controller(network_name, self.config, self.dev, self.best))
             else:
                 print("Network " + network + " is not known.")
                 sys.exit(1)

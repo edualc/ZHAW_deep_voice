@@ -50,7 +50,7 @@ class bilstm_2layer_dropout(object):
         self.dataset = dataset
         
         # Setup Logging
-        self.logger = get_logger('lstm_vox', logging.INFO)
+        self.logger = get_logger('pairwise_lstm', logging.INFO)
         self.logger.info(self.network_name)
         
         # Network configuration
