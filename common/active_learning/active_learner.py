@@ -3,7 +3,7 @@ import random
 
 import wandb
 
-from networks.pairwise_lstm_vox.core import plot_saver as ps
+from networks.pairwise_lstm.core import plot_saver as ps
 from common.spectrogram import speaker_train_splitter as sts
 from common.utils.pickler import load_speaker_pickle_or_h5
 from common.utils.paths import *
