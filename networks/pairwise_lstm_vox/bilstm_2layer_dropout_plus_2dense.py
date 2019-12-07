@@ -137,20 +137,20 @@ class bilstm_2layer_dropout(object):
         return model
 
     def create_callbacks(self):
-        csv_logger = keras.callbacks.CSVLogger(
-            get_experiment_logs(self.network_name + '.csv'))
-        info_logger = ActiveLearningEpochLogger(self.logger, self.epochs)
-        net_saver = keras.callbacks.ModelCheckpoint(
-            get_experiment_nets(self.network_name + "_best.h5"),
-            monitor='val_loss', verbose=1, save_best_only=True)
+        net_saver = keras.callbacks.ModelCheckpoint(get_experiment_nets(self.network_name + "_best.h5"),monitor='val_loss', verbose=1, save_best_only=True)
         net_checkpoint = ActiveLearningModelCheckpoint(
             get_experiment_nets(self.network_name + "_{epoch:05d}.h5"),
             period=int(self.epochs / 3)
         )
-        plot_callback_instance = PlotCallback(self.network_name)
-        wandb_callback = WandbCallback(save_model=False)
+        
+        callbacks = [net_saver, net_checkpoint]
 
-        return [csv_logger, info_logger, net_saver, net_checkpoint, plot_callback_instance, wandb_callback]
+        callbacks.append(ActiveLearningEpochLogger(self.logger, self.epochs))
+        callbacks.append(WandbCallback(save_model=False))
+        # callbacks.append(keras.callbacks.CSVLogger(get_experiment_logs(self.network_name + '.csv')))
+        # callbacks.append(PlotCallback(self.network_name))
+
+        return callbacks
 
     def fit(self, model, callbacks, epochs_to_run):
         train_gen = dg.batch_generator_h5('train', self.dataset, batch_size=100, segment_size=self.segment_size, spectrogram_height=self.spectrogram_height)
