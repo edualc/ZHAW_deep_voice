@@ -146,8 +146,13 @@ class DeepVoiceDataset():
     statistics = dict()
 
     for speaker in tqdm(self.get_speaker_list('test'), ncols=100, desc='prepare test data'):
+      num_utterances = data_file['statistics/' + speaker].shape[0]
+      cut_off = int(num_utterances * (1 - self.config.getfloat('test','short_split')))
+
       statistics[speaker] = {
-        'test': np.arange(data_file['statistics/' + speaker].shape[0])
+        'all': np.arange(num_utterances),
+        'long': np.arange(cut_off),
+        'short': np.arange(cut_off, num_utterances)
       }
 
     # Set the local variable
