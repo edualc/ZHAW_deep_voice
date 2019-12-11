@@ -23,14 +23,21 @@ def get_custom_objects(config):
     return custom_objects
 
 def get_loss(config):
-    if config.get('train', 'loss') == 'angular_margin':
+    config_loss_value = config.get('train', 'loss')
+
+    if config_loss_value == 'angular_margin':
         return AngularLoss(config).angular_loss
-    elif config.get('train', 'loss') == 'kldiv_orig':
+    elif config_loss_value == 'kldiv_orig':
         return orig_pairwise_kl_divergence
-    elif config.get('train', 'loss') == 'pairwise_kldiv':
+    elif config_loss_value == 'pairwise_kldiv':
         return pairwise_kl_divergence
     else:
-        return pairwise_kl_divergence
+        # Such as (string):
+        # - kullback_leibler_divergence
+        # - cosine_proximity
+        # - categorical_crossentropy
+        # 
+        return config_loss_value
 
 def add_final_layers(model, config):
     if config.get('train', 'loss') == 'angular_margin':

@@ -105,17 +105,16 @@ class active_learner(object):
         # ==========================================
         # 
         if uncertainty_results.shape[0] > self.n_instances:
+            # The only the worst :n_instances of utterances to add to the training
+            # dataset, picking higher uncertainties
+            # 
             utterances_to_add = np.sort(uncertainty_results, axis=0)[-self.n_instances:]
         else:
             utterances_to_add = uncertainty_results
 
-        uncertainties = uncertainty_results[:,0].astype(np.float)
         wandb.log({
-            'al_uncertainty_min': np.min(uncertainties),
-            'al_uncertainty_max': np.max(uncertainties),
-            'al_uncertainty_mean': np.mean(uncertainties),
             'al_utterances_added': utterances_to_add.shape[0]
-        })
+        }, commit=False)
 
         self.dataset.update_active_learning_share(utterances_to_add)
 

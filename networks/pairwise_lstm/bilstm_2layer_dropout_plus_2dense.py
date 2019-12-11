@@ -15,7 +15,7 @@ from math import ceil
 
 from .core import data_gen as dg
 from .core import plot_saver as ps
-from .core.callbacks import PlotCallback, ActiveLearningModelCheckpoint, ActiveLearningEpochLogger
+from .core.callbacks import PlotCallback, ActiveLearningModelCheckpoint, ActiveLearningEpochLogger, EERCallback, ActiveLearningUncertaintyCallback
 
 import common.spectrogram.speaker_train_splitter as sts
 from common.utils.logger import *
@@ -34,7 +34,6 @@ from wandb.keras import WandbCallback
     training_data: name of the Training data file, expected to be train_xxxx.pickle
     n_hidden1: Units of the first LSTM Layer
     n_hidden2: Units of the second LSTM Layer
-    dense_factor: Amount of output classes (Speakers in Trainingset)
     epochs: Number of Epochs to train the Network per ActiveLearningRound
     activeLearnerRounds: Number of learning rounds to requery the pool for new data
     segment_size: Segment size that is used as input 100 equals 1 second with current Spectrogram extraction
@@ -87,7 +86,6 @@ class bilstm_2layer_dropout(object):
             'n_hidden2': config.getint('pairwise_lstm', 'n_hidden2'),
             'n_dense1': config.getint('pairwise_lstm', 'n_dense1'),
             'n_dense2': config.getint('pairwise_lstm', 'n_dense2'),
-            'dense_factor': config.getint('pairwise_lstm', 'dense_factor'),
             'epochs': self.epochs,
             'epochs_before_al': self.epochs_before_active_learning,
             'segment_size': self.segment_size,
@@ -116,7 +114,11 @@ class bilstm_2layer_dropout(object):
 
         model.add(Dense(wandb.config.n_dense1))
         model.add(Dropout(0.25))
+        
         model.add(Dense(wandb.config.n_dense2))
+
+        # This adds the final (Dense) layer
+        # 
         add_final_layers(model, self.config)
 
         loss_function = get_loss(self.config)
@@ -146,7 +148,9 @@ class bilstm_2layer_dropout(object):
         
         callbacks = [net_saver, net_checkpoint]
 
+        callbacks.append(EERCallback(self.dataset, self.config, self.segment_size, self.spectrogram_height))
         callbacks.append(ActiveLearningEpochLogger(self.logger, self.epochs))
+        callbacks.append(ActiveLearningUncertaintyCallback(self.dataset, self.config, self.segment_size, self.spectrogram_height))
         callbacks.append(WandbCallback(save_model=False))
         # callbacks.append(keras.callbacks.CSVLogger(get_experiment_logs(self.network_name + '.csv')))
         # callbacks.append(PlotCallback(self.network_name))
@@ -159,16 +163,18 @@ class bilstm_2layer_dropout(object):
 
         history = model.fit_generator(
             train_gen,
-            steps_per_epoch=10,
+            steps_per_epoch=1,
+            # steps_per_epoch=10,
             epochs=epochs_to_run,
             callbacks=callbacks,
             validation_data=val_gen,
             validation_steps=2,
-            class_weight=None,
-            max_queue_size=10,
-            workers=1,
-            verbose=1,
-            use_multiprocessing=False
+            # class_weight=None, # DEFAULT
+            # max_queue_size=10, # DEFAULT
+            # workers=1, # DEFAULT
+            verbose=1
+            # use_multiprocessing=False, # DEFAULT
+            # initial_epoch=current_epoch
         )
 
     def run_network(self):

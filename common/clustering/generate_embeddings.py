@@ -25,30 +25,34 @@ def generate_embeddings(outputs, speakers_inputs, vector_size):
         embeddings.extend(embeddings_output)
         speakers.extend(speakers_output)
 
-    utterance_embeddings = _create_utterance_embeddings(num_speakers, vector_size, outputs, speakers_inputs)
+    utterance_embeddings = generate_utterance_embeddings(
+        np.concatenate((outputs[0],outputs[1])), np.concatenate((speakers_inputs[0],speakers_inputs[1])))
 
     return embeddings, speakers, number_embeddings, utterance_embeddings
 
-def _create_utterance_embeddings(num_speakers, vector_size, Xs, ys):
+def generate_utterance_embeddings(X, y):
     """
     Creates one embedding per utterance
     """
-    
-    X = np.concatenate((Xs[0],Xs[1]))
-    y = np.concatenate((ys[0],ys[1]))
+    num_speakers = len(set(y))
 
     # Check how many times the least represented class is present
+    # and use this to draw the samples from (giving every speaker
+    # the same amount of files to draw embeddings from during
+    # pair creation)
+    # 
     min_occurance = np.min(np.unique(y, return_counts=True)[1])
 
     # TODO: lehl@2019-12-07:
     # Check if min_occurance should be clamped at i.e. 100?
+    # (Check with Vox1/Vox2 dataset sizes)
     # 
 
     embeddings = np.zeros((num_speakers, min_occurance, X.shape[1]))
 
     # Speakers are numbered/labeled from 0 to n-1
     # 
-    for i in tqdm(range(num_speakers), ncols=100, desc='creating utterance embeddings...'):
+    for i in range(num_speakers):
         indices = np.where(y == i)[0]
         sampled_indices = np.random.choice(indices, min_occurance, replace=False)
         embeddings[i,:] = np.take(X, sampled_indices, axis=0)
