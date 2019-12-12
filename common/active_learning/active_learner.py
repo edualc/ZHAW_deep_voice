@@ -2,6 +2,7 @@ import numpy as np
 import random
 
 import wandb
+from tqdm import tqdm
 
 from networks.pairwise_lstm.core import plot_saver as ps
 from common.spectrogram import speaker_train_splitter as sts
@@ -69,9 +70,10 @@ class active_learner(object):
                 self.logger.info("Max epoch of " + str(self.epochs) + " reached, end of training")
                 break
 
-            # query for uncertainty based on pool and append to numpy X_t, X_v, ... arrays
-            # 
-            self.perform_round(model)
+            if epochs_trained > 0:
+                # query for uncertainty based on pool and append to numpy X_t, X_v, ... arrays
+                # 
+                self.perform_round(model)
 
             network.fit(model, callbacks, epochs_to_run)
             epochs_trained += epochs_to_run
@@ -98,7 +100,7 @@ class active_learner(object):
         # 
         # Iterate over a set of speakers and perform uncertainty sampling on their samples
         #
-        for speaker in random.sample(self.dataset.get_train_speaker_list(), self.n_speakers_per_al_round):
+        for speaker in tqdm(random.sample(self.dataset.get_train_speaker_list(), self.n_speakers_per_al_round), ncols=100, desc='Performing uncertainty sampling...'):
             uncertainty_results = np.append(uncertainty_results, self.perform_uncertainty_sampling(model, speaker), axis=0)
 
         # enlarge training set
@@ -132,6 +134,15 @@ class active_learner(object):
 
         if al_indices.shape[0] == 0:
             return np.empty((0,3), dtype=np.float32)
+
+        # Limit the number of utterances per speaker with an upper bound such that the imbalance is 
+        # reduced during active learning probing
+        # 
+        # TODO: lehl@2019-12-12: Should this be a parameter?
+        # 
+        max_num_utterances_per_speaker = int(self.n_instances / 8)
+        if al_indices.shape[0] > max_num_utterances_per_speaker:
+            al_indices = np.sort(np.random.choice(al_indices, max_num_utterances_per_speaker, replace=False))
 
         spectrograms = self.dataset.get_train_file()['data/'+speaker][al_indices][:]
 
