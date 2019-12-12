@@ -34,10 +34,11 @@ class ActiveLearningModelCheckpoint(ModelCheckpoint):
 
 
 class ActiveLearningUncertaintyCallback(Callback):
-    def __init__(self, dataset, config, segment_size, spectrogram_height):
+    def __init__(self, dataset, config, logger, segment_size, spectrogram_height):
         super().__init__()
         self.dataset = dataset
         self.config = config
+        self.logger = logger
         self.segment_size = segment_size
         self.spectrogram_height = spectrogram_height
         self.speakers_to_sample = 32
@@ -65,6 +66,7 @@ class ActiveLearningUncertaintyCallback(Callback):
         
         end = time.time()
         uncertainties_time_taken = end - start
+        self.logger.info("Calculating Uncertainties took {}".format(uncertainties_time_taken))
 
         wandb.log({
             'al_uncertainty_min': np.min(uncertainties),
@@ -100,10 +102,11 @@ class ActiveLearningUncertaintyCallback(Callback):
         return np.hstack((uncertainties, speaker_ids, indices))
 
 class EERCallback(Callback):
-    def __init__(self, dataset, config, segment_size, spectrogram_height):
+    def __init__(self, dataset, config, logger, segment_size, spectrogram_height):
         super().__init__()
         self.dataset = dataset
         self.config = config
+        self.logger = logger
         self.segment_size = segment_size
         self.spectrogram_height = spectrogram_height
 
@@ -117,9 +120,10 @@ class EERCallback(Callback):
         # Load Data
         # 
         start = time.time()
-        X, y = generate_test_data_h5('all', self.dataset, self.segment_size, self.spectrogram_height)
+        X, y = generate_test_data_h5('all', self.dataset, self.segment_size, self.spectrogram_height, max_files_per_speaker=64, max_segments_per_utterance=2)
         end = time.time()
         data_time_taken = end - start
+        self.logger.info("Preparing EER data took {}\t{}\t{}".format(data_time_taken, X.shape, y.shape))
 
         # Prepare Partial Model
         # 
@@ -129,18 +133,24 @@ class EERCallback(Callback):
             inputs=self.model.input,
             outputs=self.model.layers[out_layer].output
         )
-
-        output = np.asarray(model_partial.predict(X))
-        
         end = time.time()
         model_time_taken = end - start
+        self.logger.info("Loading Model took {}".format(model_time_taken))
 
         # Predict Embeddings
+        start = time.time()
+        output = np.asarray(model_partial.predict(X))        
+        end = time.time()
+        prediction_time_taken = end - start
+        self.logger.info("Calculating Predictions took {}".format(prediction_time_taken))
+
+        # Generate Utterance Embeddings
         # 
         start = time.time()
         embeddings = generate_utterance_embeddings(output, y)
         end = time.time()
         embeddings_time_taken = end - start
+        self.logger.info("Generating Embeddings took {}".format(embeddings_time_taken))
 
         # Calculate EER
         # 
@@ -148,6 +158,7 @@ class EERCallback(Callback):
         eer = equal_error_rate(embeddings)
         end = time.time()
         eer_time_taken = end - start
+        self.logger.info("Calculating EER took {}".format(eer_time_taken))
 
         # Log to WandB
         # 
@@ -155,6 +166,7 @@ class EERCallback(Callback):
             'eer': eer,
             'data_time_taken': data_time_taken,
             'model_time_taken': model_time_taken,
+            'prediction_time_taken': prediction_time_taken,
             'embeddings_time_taken': embeddings_time_taken,
             'eer_time_taken': eer_time_taken
         }, commit=False)

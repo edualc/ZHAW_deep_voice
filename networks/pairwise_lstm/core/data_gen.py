@@ -29,7 +29,7 @@ def extract(spectrogram, segment_size):
     return extract_spectrogram(spectrogram, segment_size, settings.FREQ_ELEMENTS)
 
 
-def generate_test_data_h5(test_type, dataset, segment_size, spectrogram_height):
+def generate_test_data_h5(test_type, dataset, segment_size, spectrogram_height, max_files_per_speaker=0, max_segments_per_utterance=0):
     if test_type not in ['all', 'short', 'long']:
         raise ValueError(':test_type should be either "all", "short" or "long".')
 
@@ -58,7 +58,12 @@ def generate_test_data_h5(test_type, dataset, segment_size, spectrogram_height):
     for i in range(num_speakers):
         speaker_name = all_speakers[i]
 
-        for utterance_index in dataset.get_test_statistics()[speaker_name][test_type]:
+        speaker_utterances_indices = dataset.get_test_statistics()[speaker_name][test_type]
+
+        if max_files_per_speaker > 0:
+            speaker_utterances_indices = np.random.choice(speaker_utterances_indices, max_files_per_speaker)
+
+        for utterance_index in speaker_utterances_indices:
             # Extract the full spectrogram
             # 
             full_spect = dataset.get_test_file()['data/'+speaker_name][utterance_index]
@@ -73,7 +78,12 @@ def generate_test_data_h5(test_type, dataset, segment_size, spectrogram_height):
             # as there would be space, as in how many full windows (segment_size) would fit in the
             # length of this utterance if they'd be placed consecutively without allowing partial segments
             # 
-            for segment in range(spect.shape[0] // segment_size):
+            if max_segments_per_utterance > 0:
+                segments_to_extract = range(0, max_segments_per_utterance)
+            else:
+                segments_to_extract = range(spect.shape[0] // segment_size)
+
+            for segment in segments_to_extract:
                 seg_idx = randint(0, spect.shape[1] - segment_size)
                 X_test[pos] = spect[:, seg_idx:seg_idx + segment_size]
                 y_test.append(i)
