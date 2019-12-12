@@ -92,7 +92,7 @@ class active_learner(object):
         # do uncertainty sampling
         # ==========================================
         # 
-        uncertainty_results = np.empty((0,3))
+        uncertainty_results = np.empty((0,3), dtype=np.float32)
 
         # TODO: Do we need to check if the speaker has files left (after excessive extractions)?
         # 
@@ -131,7 +131,7 @@ class active_learner(object):
         al_indices = self.dataset.get_train_statistics()[speaker]['al']
 
         if al_indices.shape[0] == 0:
-            return np.empty((0,3))
+            return np.empty((0,3), dtype=np.float32)
 
         spectrograms = self.dataset.get_train_file()['data/'+speaker][al_indices][:]
 

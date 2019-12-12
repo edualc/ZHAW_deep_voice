@@ -33,6 +33,11 @@ def generate_test_data_h5(test_type, dataset, segment_size, spectrogram_height, 
     if test_type not in ['all', 'short', 'long']:
         raise ValueError(':test_type should be either "all", "short" or "long".')
 
+    if max_files_per_speaker > 0 and max_segments_per_utterance == 0:
+        raise ValueError(":max_files_per_speaker and :max_segments_per_utterance should both be either zero or non-zero, given: {}, {}".format(max_files_per_speaker, max_segments_per_utterance))
+    if max_segments_per_utterance > 0 and max_files_per_speaker == 0:    
+        raise ValueError(":max_files_per_speaker and :max_segments_per_utterance should both be either zero or non-zero, given: {}, {}".format(max_files_per_speaker, max_segments_per_utterance))
+
     # Load the speakers(-list) used for testing
     # 
     all_speakers = np.array(dataset.get_test_speaker_list())
@@ -47,9 +52,12 @@ def generate_test_data_h5(test_type, dataset, segment_size, spectrogram_height, 
     # Get an upper bound estimate for the amount of segments actually produced
     # in terms of spectrogram slices of length :segment_size
     # 
-    num_segments = total_test_length // segment_size
+    if max_files_per_speaker == 0 and max_segments_per_utterance == 0:
+        num_segments = total_test_length // segment_size
+    else:
+        num_segments = num_speakers * max_files_per_speaker * max_segments_per_utterance
 
-    X_test = np.zeros((num_segments, spectrogram_height, segment_size))
+    X_test = np.zeros((num_segments, segment_size, spectrogram_height))
     y_test = []
 
     # Iterate over all speakers and extract spectrograms of length segment_size
@@ -65,14 +73,12 @@ def generate_test_data_h5(test_type, dataset, segment_size, spectrogram_height, 
 
         for utterance_index in speaker_utterances_indices:
             # Extract the full spectrogram
-            # 
+            #  
             full_spect = dataset.get_test_file()['data/'+speaker_name][utterance_index]
 
-            # lehl@2019-12-03: Spectrogram needs to be reshaped with (time_length, 128) and then
-            # transposed as the expected ordering is (128, time_length)
-            # TODO: Can this be improved (check how it's refactored again in return statement)
+            # lehl@2019-12-03: Spectrogram reshaped to get the format (time_length, spec_height) 
             # 
-            spect = full_spect.reshape(full_spect.shape[0] // spectrogram_height, spectrogram_height).T
+            spect = full_spect.reshape((full_spect.shape[0] // spectrogram_height, spectrogram_height))
 
             # Extract as many slices from each spectrogram-utterance
             # as there would be space, as in how many full windows (segment_size) would fit in the
@@ -85,12 +91,12 @@ def generate_test_data_h5(test_type, dataset, segment_size, spectrogram_height, 
 
             for segment in segments_to_extract:
                 seg_idx = randint(0, spect.shape[1] - segment_size)
-                X_test[pos] = spect[:, seg_idx:seg_idx + segment_size]
+                X_test[pos] = spect[seg_idx:seg_idx + segment_size, :]
                 y_test.append(i)
 
                 pos += 1
 
-    return X_test[0:len(y_test)].reshape(len(y_test), segment_size, spectrogram_height), np.asarray(y_test, dtype=np.int)
+    return X_test[0:len(y_test)], np.asarray(y_test, dtype=np.int)
 
 # Batch generator von LSTMS
 def batch_generator_lstm(X, y, batch_size=100, segment_size=40):
@@ -192,7 +198,7 @@ def batch_generator_h5(batch_type, dataset, batch_size=100, segment_size=40, spe
     # 
     while 1:
         for i in range((num_segments // batch_size) + 1):
-            Xb = np.zeros((batch_size, spectrogram_height, segment_size), dtype=np.float32)
+            Xb = np.zeros((batch_size, segment_size, spectrogram_height), dtype=np.float32)
             yb = np.zeros(batch_size, dtype=np.int32)
 
             for j in range(0, batch_size):
@@ -212,15 +218,15 @@ def batch_generator_h5(batch_type, dataset, batch_size=100, segment_size=40, spe
                 # transposed as the expected ordering is (128, time_length)
                 # TODO: Can this be improved (check how it's refactored again in return statement)
                 # 
-                spect = full_spect.reshape(full_spect.shape[0] // spectrogram_height, spectrogram_height).T
+                spect = full_spect.reshape((full_spect.shape[0] // spectrogram_height, spectrogram_height))
 
                 # Extract random :segment_size long part of the spectrogram
                 # 
                 seg_idx = randint(0, spect.shape[1] - segment_size)
-                Xb[j] = spect[:, seg_idx:seg_idx + segment_size]
+                Xb[j] = spect[seg_idx:seg_idx + segment_size, :]
 
                 # Set label
                 # 
                 yb[j] = speaker_index
 
-            yield Xb.reshape(batch_size, segment_size, spectrogram_height), np.eye(num_speakers)[yb]
+            yield Xb, np.eye(num_speakers)[yb]

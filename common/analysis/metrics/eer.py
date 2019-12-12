@@ -18,8 +18,8 @@ def equal_error_rate(utterance_embeddings):
     possible_pairs = _calculate_err__calculate_possible_pairs(embeddings_per_speaker)
     num_pairs_to_create = _calculate_eer__get_num_pairs_to_create(max_pairs_per_speaker)
 
-    true_scores = np.empty(1)
-    scores = np.empty(1)
+    true_scores = np.empty(0, dtype=np.float32)
+    scores = np.empty(0, dtype=np.float32)
 
     # Generate pairs for speakers
     # 

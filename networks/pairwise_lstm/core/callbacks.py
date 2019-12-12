@@ -14,6 +14,8 @@ import wandb
 import random
 import time
 
+CALLBACK_PERIOD = 2
+
 # ModelCheckpoint taking active learning rounds (epoch resets) into account
 # -------------------------------------------------------------------
 class ActiveLearningModelCheckpoint(ModelCheckpoint):
@@ -46,7 +48,7 @@ class ActiveLearningUncertaintyCallback(Callback):
     def on_epoch_end(self, epoch, logs={}):
         super().on_epoch_end(epoch, logs)
         
-        if epoch % 25 == 0:
+        if epoch % CALLBACK_PERIOD == 0:
             self._calculate_and_log_uncertainties()
 
     def _calculate_and_log_uncertainties(self):
@@ -113,7 +115,7 @@ class EERCallback(Callback):
     def on_epoch_end(self, epoch, logs={}):
         super().on_epoch_end(epoch, logs)
 
-        if epoch % 25 == 0:
+        if epoch % CALLBACK_PERIOD == 0:
             self._calculate_and_log_eer()
 
     def _calculate_and_log_eer(self):
