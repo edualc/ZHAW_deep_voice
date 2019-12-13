@@ -212,8 +212,14 @@ def batch_generator_h5(batch_type, dataset, batch_size=100, segment_size=40, spe
                 # Choose from all the utterances of the given speaker randomly
                 # 
                 utterance_index = np.random.choice(dataset.get_train_statistics()[speaker_name][batch_type])
-                full_spect = dataset.get_train_file()['data/' + speaker_name][utterance_index]
                 
+                # lehl@2019-12-13:
+                # If batches are generated as the statistics are updated due to active learning,
+                # it might be possible to draw from incides that are not really available, this
+                # is not a great solution, but quicker than ensuring these processes lock each other
+                #
+                full_spect = dataset.get_train_file()['data/' + speaker_name][utterance_index]
+
                 # lehl@2019-12-03: Spectrogram needs to be reshaped with (time_length, 128) and then
                 # transposed as the expected ordering is (128, time_length)
                 # TODO: Can this be improved (check how it's refactored again in return statement)

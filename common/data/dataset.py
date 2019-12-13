@@ -1,6 +1,7 @@
 import h5py
 import numpy as np
 import time
+import copy
 
 from common.utils.paths import *
 from tqdm import tqdm
@@ -200,14 +201,17 @@ class DeepVoiceDataset():
     )
 
   def update_active_learning_share(self, utterances_change):
-    statistics = self.get_train_statistics()
+    statistics = copy.deepcopy(self.get_train_statistics())
 
     for row in utterances_change:
+      speaker = row[1]
+      utterance_id = int(row[2])
+
       # Add utterance to train set
-      statistics[row[1]]['train'] = np.append(statistics[row[1]]['train'], int(row[2]))
+      statistics[speaker]['train'] = np.append(statistics[speaker]['train'], utterance_id)
 
       # Remove utterance from active learning set
-      statistics[row[1]]['al'] = np.delete(statistics[row[1]]['al'], np.where(statistics[row[1]]['al'] == int(row[2])), 0)
+      statistics[speaker]['al'] = np.delete(statistics[speaker]['al'], np.where(statistics[speaker]['al'] == utterance_id), 0)
 
     # Overwrite existing statistics
     self.data['train_statistics'] = statistics
@@ -215,7 +219,7 @@ class DeepVoiceDataset():
   def __check_is_active_learning_enabled(self):
     return self.config.getboolean('active_learning','enabled')
 
-  # PRIVATE method t ocheck if the given file_type is either
+  # PRIVATE method to check if the given file_type is either
   # train or test
   # 
   def __check_file_type(self, file_type):

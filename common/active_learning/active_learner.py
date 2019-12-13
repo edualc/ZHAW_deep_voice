@@ -70,10 +70,10 @@ class active_learner(object):
                 self.logger.info("Max epoch of " + str(self.epochs) + " reached, end of training")
                 break
 
-            if epochs_trained > 0:
-                # query for uncertainty based on pool and append to numpy X_t, X_v, ... arrays
-                # 
-                self.perform_round(model)
+            # if epochs_trained > 0:
+            # query for uncertainty based on pool and append to numpy X_t, X_v, ... arrays
+            # 
+            self.perform_round(model)
 
             network.fit(model, callbacks, epochs_to_run)
             epochs_trained += epochs_to_run
@@ -110,7 +110,7 @@ class active_learner(object):
             # The only the worst :n_instances of utterances to add to the training
             # dataset, picking higher uncertainties
             # 
-            utterances_to_add = np.sort(uncertainty_results, axis=0)[-self.n_instances:]
+            utterances_to_add = uncertainty_results[uncertainty_results[:,0].argsort()][-self.n_instances:]
         else:
             utterances_to_add = uncertainty_results
 
@@ -144,19 +144,24 @@ class active_learner(object):
         if al_indices.shape[0] > max_num_utterances_per_speaker:
             al_indices = np.sort(np.random.choice(al_indices, max_num_utterances_per_speaker, replace=False))
 
+        # Load all spectrograms of the current speaker according to the
+        # al_indices sampled from the al part in statistics
+        # 
         spectrograms = self.dataset.get_train_file()['data/'+speaker][al_indices][:]
 
-        Xb = np.zeros((spectrograms.shape[0], 1, self.spectrogram_height, self.segment_size))
+        # Initialize the speaker spectrogram segments to predict on
+        # 
+        Xb = np.zeros((spectrograms.shape[0], self.segment_size, self.spectrogram_height))
         indices = np.zeros((spectrograms.shape[0]),dtype=np.int)
 
         for i in range(spectrograms.shape[0]):
-            spect = spectrograms[i].reshape(spectrograms[i].shape[0] // self.spectrogram_height, self.spectrogram_height).T
-            seg_idx = random.randint(0, spect.shape[1] - self.segment_size)
+            spect = spectrograms[i].reshape(spectrograms[i].shape[0] // self.spectrogram_height, self.spectrogram_height)
+            seg_idx = random.randint(0, spect.shape[0] - self.segment_size)
 
-            Xb[i, 0] = spect[:, seg_idx:seg_idx + self.segment_size]
+            Xb[i] = spect[seg_idx:seg_idx + self.segment_size, :]
             indices[i] = al_indices[i]
 
-        ys = model.predict(Xb.reshape(spectrograms.shape[0], self.segment_size, self.spectrogram_height))
+        ys = model.predict(Xb)
 
         uncertainties = (1 - np.max(ys,axis=1)).reshape(ys.shape[0],1)
         speaker_ids = np.full(uncertainties.shape, speaker)
