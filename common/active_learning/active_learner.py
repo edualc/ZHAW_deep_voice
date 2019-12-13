@@ -70,10 +70,10 @@ class active_learner(object):
                 self.logger.info("Max epoch of " + str(self.epochs) + " reached, end of training")
                 break
 
-            # if epochs_trained > 0:
-            # query for uncertainty based on pool and append to numpy X_t, X_v, ... arrays
-            # 
-            self.perform_round(model)
+            if epochs_trained > 0:
+                # query for uncertainty based on pool and append to numpy X_t, X_v, ... arrays
+                # 
+                self.perform_round(model)
 
             network.fit(model, callbacks, epochs_to_run)
             epochs_trained += epochs_to_run
