@@ -44,12 +44,15 @@ class ActiveLearningUncertaintyCallback(Callback):
         self.segment_size = segment_size
         self.spectrogram_height = spectrogram_height
         self.speakers_to_sample = 32
+        self.current_epoch = 0
 
     def on_epoch_end(self, epoch, logs={}):
         super().on_epoch_end(epoch, logs)
         
-        if epoch % CALLBACK_PERIOD == 0:
+        if self.current_epoch % CALLBACK_PERIOD == 0:
             self._calculate_and_log_uncertainties()
+
+        self.current_epoch += 1
 
     def _calculate_and_log_uncertainties(self):
         start = time.time()
@@ -111,12 +114,15 @@ class EERCallback(Callback):
         self.logger = logger
         self.segment_size = segment_size
         self.spectrogram_height = spectrogram_height
+        self.current_epoch = 0
 
     def on_epoch_end(self, epoch, logs={}):
         super().on_epoch_end(epoch, logs)
 
-        if epoch % CALLBACK_PERIOD == 0:
+        if self.current_epoch % CALLBACK_PERIOD == 0:
             self._calculate_and_log_eer()
+
+        self.current_epoch += 1
 
     def _calculate_and_log_eer(self):
         # Load Data
