@@ -150,7 +150,10 @@ class bilstm_2layer_dropout(object):
 
         callbacks.append(EERCallback(self.dataset, self.config, self.logger, self.segment_size, self.spectrogram_height))
         callbacks.append(ActiveLearningEpochLogger(self.logger, self.epochs))
-        callbacks.append(ActiveLearningUncertaintyCallback(self.dataset, self.config, self.logger, self.segment_size, self.spectrogram_height))
+        
+        if self.config.getboolean('active_learning','enabled'):
+            callbacks.append(ActiveLearningUncertaintyCallback(self.dataset, self.config, self.logger, self.segment_size, self.spectrogram_height))
+        
         callbacks.append(WandbCallback(save_model=False))
         # callbacks.append(keras.callbacks.CSVLogger(get_experiment_logs(self.network_name + '.csv')))
         # callbacks.append(PlotCallback(self.network_name))

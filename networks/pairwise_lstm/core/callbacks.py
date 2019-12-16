@@ -80,7 +80,7 @@ class ActiveLearningUncertaintyCallback(Callback):
     def _perform_uncertainty_sampling(self, speaker):
         al_indices = self.dataset.get_train_statistics()[speaker]['al']
 
-        if al_indices.shape[0] == 0:
+        if len(al_indices) == 0:
             return np.empty((0,3))
 
         spectrograms = self.dataset.get_train_file()['data/'+speaker][al_indices][:]
