@@ -81,7 +81,10 @@ class ActiveLearningUncertaintyCallback(Callback):
         }, commit=False)
 
     def _perform_uncertainty_sampling(self, speaker):
-        al_indices = self.dataset.get_train_statistics()[speaker]['al']
+        if self.config.getboolean('active_learning','enabled'):
+            al_indices = self.dataset.get_train_statistics()[speaker]['al']
+        else:
+            al_indices = self.dataset.get_train_statistics()[speaker]['train']
 
         if len(al_indices) == 0:
             return np.empty((0,3))
