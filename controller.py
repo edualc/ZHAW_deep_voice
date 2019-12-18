@@ -101,6 +101,9 @@ class Controller:
             if network == 'pairwise_lstm':
                 from networks.pairwise_lstm.lstm_controller import LSTMController
                 self.network_controllers.append(LSTMController(network_name, self.config, self.dev, self.best))
+            elif network == 'resnet50':
+                from networks.resnet50.resnet50_controller import ResNet50Controller
+                self.network_controllers.append(ResNet50Controller(network_name, self.config, self.dev, self.best))
             elif network == 'pairwise_kldiv':
                 from networks.pairwise_kldiv.kldiv_controller import KLDivController
                 self.network_controllers.append(KLDivController(network_name, self.config, self.dev))
