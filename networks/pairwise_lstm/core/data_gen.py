@@ -95,7 +95,7 @@ def generate_test_data_h5(test_type, dataset, segment_size, spectrogram_height, 
                 segments_to_extract = range(spect.shape[0] // segment_size)
 
             for segment in segments_to_extract:
-                seg_idx = randint(0, spect.shape[1] - segment_size)
+                seg_idx = randint(0, spect.shape[0] - segment_size)
                 X_test[pos] = spect[seg_idx:seg_idx + segment_size, :]
                 y_test.append(i)
 
@@ -237,7 +237,7 @@ def batch_generator_h5(batch_type, dataset, batch_size=100, segment_size=40, spe
 
                 # Extract random :segment_size long part of the spectrogram
                 # 
-                seg_idx = randint(0, spect.shape[1] - segment_size)
+                seg_idx = randint(0, spect.shape[0] - segment_size)
                 Xb[j] = spect[seg_idx:seg_idx + segment_size, :]
 
                 # Set label

@@ -105,6 +105,8 @@ class bilstm_2layer_dropout(object):
         from keras import backend as K
         list_of_gpus_available = K.tensorflow_backend._get_available_gpus()
         if len(list_of_gpus_available) > 0:
+            self.logger.info("NETWORK IS USING GPU!")
+
             # GPUs are available
             # 
             if self.config.getboolean('pairwise_lstm','lstm_kernel_regularization'):
@@ -119,6 +121,8 @@ class bilstm_2layer_dropout(object):
                 model.add(Bidirectional(CuDNNLSTM(wandb.config.n_hidden2)))
             
         else:
+            self.logger.info("NETWORK IS USING CPU!")
+
             # running on CPU
             # 
             if self.config.getboolean('pairwise_lstm','lstm_kernel_regularization'):
@@ -168,10 +172,11 @@ class bilstm_2layer_dropout(object):
         
         callbacks = [net_saver, net_checkpoint]
 
-        callbacks.append(EERCallback(self.dataset, self.config, self.logger, self.segment_size, self.spectrogram_height))
+        # callbacks.append(EERCallback(self.dataset, self.config, self.logger, self.segment_size, self.spectrogram_height))
         callbacks.append(ActiveLearningEpochLogger(self.logger, self.epochs))
-        callbacks.append(ActiveLearningUncertaintyCallback(self.dataset, self.config, self.logger, self.segment_size, self.spectrogram_height))
+        # callbacks.append(ActiveLearningUncertaintyCallback(self.dataset, self.config, self.logger, self.segment_size, self.spectrogram_height))
         callbacks.append(WandbCallback(save_model=False))
+        # 
         # callbacks.append(keras.callbacks.CSVLogger(get_experiment_logs(self.network_name + '.csv')))
         # callbacks.append(PlotCallback(self.network_name))
 
@@ -181,7 +186,7 @@ class bilstm_2layer_dropout(object):
         # Use multithreaded data generator
         # 
         training_generator = ParallelDataGenerator(batch_size=100, segment_size=self.segment_size,
-            spectrogram_height=self.spectrogram_height, dataset=self.dataset)
+            spectrogram_height=self.spectrogram_height, config=self.config, dataset=self.dataset)
         train_gen = training_generator.get_generator('train')
         val_gen = training_generator.get_generator('val')
 
