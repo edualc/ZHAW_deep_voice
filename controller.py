@@ -26,7 +26,7 @@ import argparse
 import sys
 
 from common.analysis.plotting import plot_files
-from common.extrapolation.setup import setup_suite
+from common.extrapolation.setup import setup_suite, setup_datasets
 from common.utils.paths import *
 from common.utils.load_config import *
 
@@ -60,7 +60,11 @@ class Controller:
 
     def setup_networks(self, dataset):
         print("Setting up the network suite.")
-        setup_suite(dataset)
+        # # How previous papers used and prepared the datasets
+        # # 
+        # setup_suite(dataset)
+        
+        setup_datasets()
 
     def train_network(self):
         for network_controller in self.network_controllers:
