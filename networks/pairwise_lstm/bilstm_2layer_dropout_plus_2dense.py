@@ -101,16 +101,35 @@ class bilstm_2layer_dropout(object):
     def create_net(self):
         model = Sequential()
 
-        if self.config.getboolean('pairwise_lstm','lstm_kernel_regularization'):
-            model.add(Bidirectional(LSTM(wandb.config.n_hidden1, return_sequences=True,
-                kernel_regularizer=regularizers.l1_l2(l1=0.01, l2=0.01)), input_shape=self.input))
-            model.add(Dropout(0.50))
-            model.add(Bidirectional(LSTM(wandb.config.n_hidden2,
-                kernel_regularizer=regularizers.l1_l2(l1=0.01, l2=0.01))))
+        from keras import backend as K
+        list_of_gpus_available = K.tensorflow_backend._get_available_gpus()
+        if len(list_of_gpus_available) > 0:
+            # GPUs are available
+            # 
+            if self.config.getboolean('pairwise_lstm','lstm_kernel_regularization'):
+                model.add(Bidirectional(CuDNNLSTM(wandb.config.n_hidden1, return_sequences=True,
+                    kernel_regularizer=regularizers.l1_l2(l1=0.01, l2=0.01)), input_shape=self.input))
+                model.add(Dropout(0.50))
+                model.add(Bidirectional(CuDNNLSTM(wandb.config.n_hidden2,
+                    kernel_regularizer=regularizers.l1_l2(l1=0.01, l2=0.01))))
+            else:
+                model.add(Bidirectional(CuDNNLSTM(wandb.config.n_hidden1, return_sequences=True), input_shape=self.input))
+                model.add(Dropout(0.50))
+                model.add(Bidirectional(CuDNNLSTM(wandb.config.n_hidden2)))
+            
         else:
-            model.add(Bidirectional(LSTM(wandb.config.n_hidden1, return_sequences=True), input_shape=self.input))
-            model.add(Dropout(0.50))
-            model.add(Bidirectional(LSTM(wandb.config.n_hidden2)))
+            # running on CPU
+            # 
+            if self.config.getboolean('pairwise_lstm','lstm_kernel_regularization'):
+                model.add(Bidirectional(LSTM(wandb.config.n_hidden1, return_sequences=True,
+                    kernel_regularizer=regularizers.l1_l2(l1=0.01, l2=0.01)), input_shape=self.input))
+                model.add(Dropout(0.50))
+                model.add(Bidirectional(LSTM(wandb.config.n_hidden2,
+                    kernel_regularizer=regularizers.l1_l2(l1=0.01, l2=0.01))))
+            else:
+                model.add(Bidirectional(LSTM(wandb.config.n_hidden1, return_sequences=True), input_shape=self.input))
+                model.add(Dropout(0.50))
+                model.add(Bidirectional(LSTM(wandb.config.n_hidden2)))
 
         model.add(Dense(wandb.config.n_dense1))
         model.add(Dropout(0.25))
