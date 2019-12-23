@@ -146,7 +146,7 @@ class resnet_network(object):
         
         net_checkpoint = ActiveLearningModelCheckpoint(
             get_experiment_nets(self.network_name + "_{epoch:05d}.h5"),
-            period=int(self.epochs / 3)
+            period=100
         )
         
         callbacks = [net_saver, net_checkpoint]
