@@ -227,7 +227,6 @@ def batch_generator_h5(batch_type, dataset, batch_size=100, segment_size=40, spe
 
                 # lehl@2019-12-03: Spectrogram needs to be reshaped with (time_length, 128) and then
                 # transposed as the expected ordering is (128, time_length)
-                # TODO: Can this be improved (check how it's refactored again in return statement)
                 # 
                 spect = full_spect.reshape((full_spect.shape[0] // spectrogram_height, spectrogram_height))
 

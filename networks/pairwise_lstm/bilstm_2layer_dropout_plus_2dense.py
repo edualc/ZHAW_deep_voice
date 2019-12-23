@@ -14,6 +14,7 @@ from keras import regularizers
 from math import ceil
 
 from .core import data_gen as dg
+from .core.parallel_data_gen import ParallelDataGenerator
 from .core import plot_saver as ps
 from .core.callbacks import PlotCallback, ActiveLearningModelCheckpoint, ActiveLearningEpochLogger, EERCallback, ActiveLearningUncertaintyCallback
 
@@ -177,8 +178,17 @@ class bilstm_2layer_dropout(object):
         return callbacks
 
     def fit(self, model, callbacks, epochs_to_run):
-        train_gen = dg.batch_generator_h5('train', self.dataset, batch_size=100, segment_size=self.segment_size, spectrogram_height=self.spectrogram_height)
-        val_gen = dg.batch_generator_h5('val', self.dataset, batch_size=100, segment_size=self.segment_size, spectrogram_height=self.spectrogram_height)
+        # Use multithreaded data generator
+        # 
+        training_generator = ParallelDataGenerator(batch_size=100, segment_size=self.segment_size,
+            spectrogram_height=self.spectrogram_height, dataset=self.dataset)
+        train_gen = training_generator.get_generator('train')
+        val_gen = training_generator.get_generator('val')
+
+        # # Use single_threaded data generator (legacy)
+        # # 
+        # train_gen = dg.batch_generator_h5('train', self.dataset, batch_size=100, segment_size=self.segment_size, spectrogram_height=self.spectrogram_height)
+        # val_gen = dg.batch_generator_h5('val', self.dataset, batch_size=100, segment_size=self.segment_size, spectrogram_height=self.spectrogram_height)
 
         history = model.fit_generator(
             train_gen,
@@ -194,6 +204,8 @@ class bilstm_2layer_dropout(object):
             # use_multiprocessing=False, # DEFAULT
             # initial_epoch=current_epoch
         )
+
+        training_generator.terminate_queue()
 
     def run_network(self):
         # base keras network
