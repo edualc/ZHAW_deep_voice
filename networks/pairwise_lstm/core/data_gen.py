@@ -80,6 +80,11 @@ def generate_test_data_h5(test_type, dataset, segment_size, spectrogram_height, 
             # 
             spect = full_spect.reshape((full_spect.shape[0] // spectrogram_height, spectrogram_height))
 
+            # Standardize
+            mu = np.mean(spect, 0, keepdims=True)
+            stdev = np.std(spect, 0, keepdims=True)
+            spect = (spect - mu) / (stdev + 1e-5)
+
             # Extract as many slices from each spectrogram-utterance
             # as there would be space, as in how many full windows (segment_size) would fit in the
             # length of this utterance if they'd be placed consecutively without allowing partial segments
@@ -225,6 +230,11 @@ def batch_generator_h5(batch_type, dataset, batch_size=100, segment_size=40, spe
                 # TODO: Can this be improved (check how it's refactored again in return statement)
                 # 
                 spect = full_spect.reshape((full_spect.shape[0] // spectrogram_height, spectrogram_height))
+
+                # Standardize
+                mu = np.mean(spect, 0, keepdims=True)
+                stdev = np.std(spect, 0, keepdims=True)
+                spect = (spect - mu) / (stdev + 1e-5)
 
                 # Extract random :segment_size long part of the spectrogram
                 # 
