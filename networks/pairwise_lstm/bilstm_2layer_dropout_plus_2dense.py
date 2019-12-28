@@ -187,11 +187,11 @@ class bilstm_2layer_dropout(object):
     def fit(self, model, callbacks, epochs_to_run):
         # Use multithreaded data generator
         # 
-        tg = ParallelTrainingDataGenerator(batch_size=100, segment_size=self.segment_size,
+        tg = ParallelTrainingDataGenerator(batch_size=128, segment_size=self.segment_size,
             spectrogram_height=self.spectrogram_height, config=self.config, dataset=self.dataset)
         train_gen = tg.get_generator()
 
-        vg = ParallelValidationDataGenerator(batch_size=100, segment_size=self.segment_size,
+        vg = ParallelValidationDataGenerator(batch_size=128, segment_size=self.segment_size,
             spectrogram_height=self.spectrogram_height, config=self.config, dataset=self.dataset)
         val_gen = vg.get_generator()
 
@@ -202,7 +202,7 @@ class bilstm_2layer_dropout(object):
 
         history = model.fit_generator(
             train_gen,
-            steps_per_epoch=10,
+            steps_per_epoch=32,
             epochs=epochs_to_run,
             callbacks=callbacks,
             validation_data=val_gen,
