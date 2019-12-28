@@ -87,7 +87,7 @@ class DeepVoiceDataset():
     data_file = self.get_file('train')
     statistics = dict()
 
-    for speaker in tqdm(self.get_speaker_list('train'), ncols=100, desc='split training and validation data'):
+    for speaker in tqdm(self.get_speaker_list('train'), ascii=True, ncols=100, desc='split training and validation data'):
       # Files for each speaker are split into training and validation,
       # while - with active learning enabled - the training is further
       # split into training and al, such that during the active learning
@@ -156,7 +156,7 @@ class DeepVoiceDataset():
     data_file = self.get_file('test')
     statistics = dict()
 
-    for speaker in tqdm(self.get_speaker_list('test'), ncols=100, desc='prepare test data'):
+    for speaker in tqdm(self.get_speaker_list('test'), ascii=True, ncols=100, desc='prepare test data'):
       num_utterances = data_file['statistics/' + speaker].shape[0]
       cut_off = int(num_utterances * (1 - self.config.getfloat('test','short_split')))
 
