@@ -131,7 +131,7 @@ class EERCallback(Callback):
         # Load Data
         # 
         start = time.time()
-        X, y = generate_test_data_h5('all', self.dataset, self.segment_size, self.spectrogram_height, max_files_per_speaker=64, max_segments_per_utterance=2)
+        X, y = generate_test_data_h5('all', self.dataset, self.segment_size, self.spectrogram_height, max_files_per_speaker=16, max_segments_per_utterance=1)
         end = time.time()
         data_time_taken = end - start
         self.logger.info("Preparing EER data took {}\t{}\t{}".format(data_time_taken, X.shape, y.shape))
