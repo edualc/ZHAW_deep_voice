@@ -14,7 +14,9 @@ from keras import regularizers
 from math import ceil
 
 from .core import data_gen as dg
-from .core.parallel_data_gen import ParallelDataGenerator
+# from .core.parallel_data_gen import ParallelDataGenerator
+from .core.parallel_train_data_gen import ParallelTrainingDataGenerator
+from .core.parallel_val_data_gen import ParallelValidationDataGenerator
 from .core import plot_saver as ps
 from .core.callbacks import PlotCallback, ActiveLearningModelCheckpoint, ActiveLearningEpochLogger, EERCallback, ActiveLearningUncertaintyCallback
 
@@ -172,9 +174,9 @@ class bilstm_2layer_dropout(object):
         
         callbacks = [net_saver, net_checkpoint]
 
-        # callbacks.append(EERCallback(self.dataset, self.config, self.logger, self.segment_size, self.spectrogram_height))
+        callbacks.append(EERCallback(self.dataset, self.config, self.logger, self.segment_size, self.spectrogram_height))
         callbacks.append(ActiveLearningEpochLogger(self.logger, self.epochs))
-        # callbacks.append(ActiveLearningUncertaintyCallback(self.dataset, self.config, self.logger, self.segment_size, self.spectrogram_height))
+        callbacks.append(ActiveLearningUncertaintyCallback(self.dataset, self.config, self.logger, self.segment_size, self.spectrogram_height))
         callbacks.append(WandbCallback(save_model=False))
         # 
         # callbacks.append(keras.callbacks.CSVLogger(get_experiment_logs(self.network_name + '.csv')))
@@ -185,10 +187,13 @@ class bilstm_2layer_dropout(object):
     def fit(self, model, callbacks, epochs_to_run):
         # Use multithreaded data generator
         # 
-        training_generator = ParallelDataGenerator(batch_size=100, segment_size=self.segment_size,
+        tg = ParallelTrainingDataGenerator(batch_size=100, segment_size=self.segment_size,
             spectrogram_height=self.spectrogram_height, config=self.config, dataset=self.dataset)
-        train_gen = training_generator.get_generator('train')
-        val_gen = training_generator.get_generator('val')
+        train_gen = tg.get_generator()
+
+        vg = ParallelValidationDataGenerator(batch_size=100, segment_size=self.segment_size,
+            spectrogram_height=self.spectrogram_height, config=self.config, dataset=self.dataset)
+        val_gen = vg.get_generator()
 
         # # Use single_threaded data generator (legacy)
         # # 
@@ -210,7 +215,8 @@ class bilstm_2layer_dropout(object):
             # initial_epoch=current_epoch
         )
 
-        training_generator.terminate_queue()
+        tg.terminate_queue()
+        vg.terminate_queue()
 
     def run_network(self):
         # base keras network

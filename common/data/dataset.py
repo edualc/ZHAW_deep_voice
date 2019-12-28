@@ -11,6 +11,13 @@ class DeepVoiceDataset():
       self.config = config
       self.data = dict()
 
+      self.initialized = False
+      self.initialize()
+
+  def initialize(self):
+    if not self.initialized:
+      self.initialized = True
+      
       # Initialize Statistics
       # 
       self.get_train_statistics()
@@ -42,22 +49,20 @@ class DeepVoiceDataset():
   def get_test_file(self):
     return self.get_file('test')
 
+  # Returns a NEW file handler to the dataset file
+  # 
   def get_file(self, file_type):
     self.__check_file_type(file_type)
+    return self.__get_file__by_type(file_type)
 
-    try:
-      return self.data[file_type + '_file']
-    except KeyError:
-      return self.__get_file__initialize(file_type)
-
-  # PRIVATE method to initialize the train/test file used
-  # in the local (private) variable __train_file/__test_file
+  # Due to a problem when forking the main process, the file handler
+  # should only be open for as long as necessary and NOT constantly.
   # 
-  def __get_file__initialize(self, file_type):
+  # see https://groups.google.com/forum/#!topic/h5py/bJVtWdFtZQM
+  # 
+  def __get_file__by_type(self, file_type):
     dataset_path = self.config.get(file_type,'dataset') + '.h5'
-    self.data[file_type + '_file'] = h5py.File(dataset_path, 'r')
-
-    return self.data[file_type + '_file']
+    return h5py.File(dataset_path, 'r')
 
   def get_train_statistics(self):
     return self.get_statistics('train')
@@ -139,6 +144,9 @@ class DeepVoiceDataset():
         'val': val_indices, 'val_share': val_share
       }
 
+    # Close h5py Connection
+    data_file.close()
+
     # Set the local variable
     # 
     self.data['train_statistics'] = statistics
@@ -158,6 +166,9 @@ class DeepVoiceDataset():
         'short': np.arange(cut_off, num_utterances)
       }
 
+    # Close h5py Connection
+    data_file.close()
+    
     # Set the local variable
     # 
     self.data['test_statistics'] = statistics

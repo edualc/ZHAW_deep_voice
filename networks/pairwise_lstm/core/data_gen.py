@@ -60,6 +60,8 @@ def generate_test_data_h5(test_type, dataset, segment_size, spectrogram_height, 
     X_test = np.zeros((num_segments, segment_size, spectrogram_height))
     y_test = []
 
+    data_file = dataset.get_test_file()
+
     # Iterate over all speakers and extract spectrograms of length segment_size
     # 
     pos = 0
@@ -74,7 +76,7 @@ def generate_test_data_h5(test_type, dataset, segment_size, spectrogram_height, 
         for utterance_index in speaker_utterances_indices:
             # Extract the full spectrogram
             #  
-            full_spect = dataset.get_test_file()['data/'+speaker_name][utterance_index]
+            full_spect = data_file['data/'+speaker_name][utterance_index]
 
             # lehl@2019-12-03: Spectrogram reshaped to get the format (time_length, spec_height) 
             # 
@@ -100,6 +102,9 @@ def generate_test_data_h5(test_type, dataset, segment_size, spectrogram_height, 
                 y_test.append(i)
 
                 pos += 1
+
+    # Close h5py Connection
+    data_file.close()
 
     return X_test[0:len(y_test)], np.asarray(y_test, dtype=np.int)
 
@@ -203,6 +208,8 @@ def batch_generator_h5(batch_type, dataset, batch_size=100, segment_size=40, spe
     # 
     while 1:
         for i in range((num_segments // batch_size) + 1):
+            data_file = dataset.get_train_file()
+
             Xb = np.zeros((batch_size, segment_size, spectrogram_height), dtype=np.float32)
             yb = np.zeros(batch_size, dtype=np.int32)
 
@@ -223,7 +230,7 @@ def batch_generator_h5(batch_type, dataset, batch_size=100, segment_size=40, spe
                 # it might be possible to draw from incides that are not really available, this
                 # is not a great solution, but quicker than ensuring these processes lock each other
                 #
-                full_spect = dataset.get_train_file()['data/' + speaker_name][utterance_index]
+                full_spect = data_file['data/' + speaker_name][utterance_index]
 
                 # lehl@2019-12-03: Spectrogram needs to be reshaped with (time_length, 128) and then
                 # transposed as the expected ordering is (128, time_length)
@@ -243,5 +250,8 @@ def batch_generator_h5(batch_type, dataset, batch_size=100, segment_size=40, spe
                 # Set label
                 # 
                 yb[j] = speaker_index
+
+            # Close h5py Connection
+            data_file.close()
 
             yield Xb, np.eye(num_speakers)[yb]

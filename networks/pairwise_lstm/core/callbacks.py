@@ -117,7 +117,7 @@ class EERCallback(Callback):
         self.logger = logger
         self.segment_size = segment_size
         self.spectrogram_height = spectrogram_height
-        self.current_epoch = 0
+        self.current_epoch = 0 
 
     def on_epoch_end(self, epoch, logs={}):
         super().on_epoch_end(epoch, logs)
