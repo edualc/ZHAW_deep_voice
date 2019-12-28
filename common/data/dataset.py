@@ -106,32 +106,37 @@ class DeepVoiceDataset():
       val_share = self.config.getfloat('train','validation_share')
       al_share = self.__get_statistics__get_active_learning_share()
 
-      # Calculate base statistics for speaker
+      # all indices to choose from
       # 
-      total_speaker_time = np.sum(data_file['statistics/'+ speaker])
-      cumulative_sum = np.cumsum(data_file['statistics/'+ speaker])
+      all_indices = np.arange(data_file['statistics/' + speaker].shape[0])
 
-      # Calculate which is the first index of files that is, an 
-      # extra +1 is added to include the cut_off_index file in the training,
-      # otherwise it would be "AT LEAST" validation_share of the dataset
-      # in the validation set
-      # 
-      val_cut_off_index = np.where(cumulative_sum > total_speaker_time * (1 - val_share))[0][0] + 1
+      num_indices = all_indices.shape[0]
+      amount_of_val_indices = math.ceil(val_share * data_file['statistics/' + speaker].shape[0])
+      amount_of_train_indices = num_indices - amount_of_val_indices
 
-      train_indices = np.arange(val_cut_off_index)
-      val_indices = np.arange(val_cut_off_index, data_file['statistics/' + speaker].shape[0]) 
-      val_share = np.sum(data_file['statistics/'+ speaker][val_cut_off_index:] / total_speaker_time)
+      val_indices = np.random.choice(all_indices, amount_of_val_indices, replace=False)
+      val_share = amount_of_val_indices / num_indices
+
+      train_indices = np.delete(all_indices, val_indices)
 
       # Do we need to further split the training data for active learning?
       if self.config.getboolean('active_learning','enabled'):
-        al_cut_off_index = np.where(cumulative_sum > total_speaker_time * (1 - val_share) * (1 - al_share))[0][0] + 1
+        amount_of_al_indices = math.ceil(al_share * train_indices.shape[0])
 
-        train_indices = np.arange(al_cut_off_index)
-        al_indices = np.arange(al_cut_off_index, val_cut_off_index)
+        al_indices = np.random.choice(train_indices, amount_of_al_indices, replace=False)
+        al_share = amount_of_al_indices / num_indices
 
-        al_share = np.sum(data_file['statistics/'+ speaker][al_cut_off_index:val_cut_off_index] / total_speaker_time)
+        train_indices = np.delete(train_indices, al_indices)
         train_share = 1.0 - val_share - al_share
 
+        # lehl@2019-12-28: TODO: change such that the al_share and val_share are calculated based
+        # on utterance lengths (see old implementation commented out below:)
+        # 
+        # al_cut_off_index = np.where(cumulative_sum > total_speaker_time * (1 - val_share) * (1 - al_share))[0][0] + 1
+        # train_indices = np.arange(al_cut_off_index)
+        # al_indices = np.arange(al_cut_off_index, val_cut_off_index)
+        # al_share = np.sum(data_file['statistics/'+ speaker][al_cut_off_index:val_cut_off_index] / total_speaker_time)
+        # train_share = 1.0 - val_share - al_share
       else:
         al_share = 0.0
         train_share = 1.0 - val_share
@@ -157,6 +162,9 @@ class DeepVoiceDataset():
     statistics = dict()
 
     for speaker in tqdm(self.get_speaker_list('test'), ascii=True, ncols=100, desc='prepare test data'):
+      # lehl@2019-12-28: TODO: Change here to use random sampling
+      # instead of splitting in half "as-is"
+      # 
       num_utterances = data_file['statistics/' + speaker].shape[0]
       cut_off = int(num_utterances * (1 - self.config.getfloat('test','short_split')))
 
