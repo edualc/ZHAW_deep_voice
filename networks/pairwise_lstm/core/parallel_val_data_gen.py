@@ -8,7 +8,7 @@ import time
 import signal
 
 QUEUE_SIZE = 8
-NUM_PROCESSES = 4
+NUM_PROCESSES = 8
 
 class ParallelValidationDataGenerator:
     def __init__(self, batch_size=100, segment_size=40, spectrogram_height=128, config=None, dataset=None):

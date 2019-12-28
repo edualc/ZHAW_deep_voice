@@ -202,7 +202,7 @@ class bilstm_2layer_dropout(object):
 
         history = model.fit_generator(
             train_gen,
-            steps_per_epoch=32,
+            steps_per_epoch=16,
             epochs=epochs_to_run,
             callbacks=callbacks,
             validation_data=val_gen,
