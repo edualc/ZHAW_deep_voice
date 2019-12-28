@@ -14,7 +14,7 @@ import wandb
 import random
 import time
 
-CALLBACK_PERIOD = 50
+CALLBACK_PERIOD = 1
 
 # ModelCheckpoint taking active learning rounds (epoch resets) into account
 # -------------------------------------------------------------------
