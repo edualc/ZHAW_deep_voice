@@ -96,7 +96,9 @@ class bilstm_2layer_dropout(object):
             'beta_1': self.config.getfloat('pairwise_lstm', 'adam_beta_1'),
             'beta_2': self.config.getfloat('pairwise_lstm', 'adam_beta_2'),
             'epsilon': self.config.getfloat('pairwise_lstm', 'adam_epsilon'),
-            'decay': self.config.getfloat('pairwise_lstm', 'adam_decay')
+            'decay': self.config.getfloat('pairwise_lstm', 'adam_decay'),
+            'l1_regularization': self.config.getfloat('pairwise_lstm', 'l1_regularization'),
+            'l2_regularization': self.config.getfloat('pairwise_lstm', 'l2_regularization')
         })
 
         self.run_network()
@@ -111,32 +113,22 @@ class bilstm_2layer_dropout(object):
 
             # GPUs are available
             # 
-            if self.config.getboolean('pairwise_lstm','lstm_kernel_regularization'):
-                model.add(Bidirectional(CuDNNLSTM(wandb.config.n_hidden1, return_sequences=True,
-                    kernel_regularizer=regularizers.l1_l2(l1=0.01, l2=0.01)), input_shape=self.input))
-                model.add(Dropout(0.50))
-                model.add(Bidirectional(CuDNNLSTM(wandb.config.n_hidden2,
-                    kernel_regularizer=regularizers.l1_l2(l1=0.01, l2=0.01))))
-            else:
-                model.add(Bidirectional(CuDNNLSTM(wandb.config.n_hidden1, return_sequences=True), input_shape=self.input))
-                model.add(Dropout(0.50))
-                model.add(Bidirectional(CuDNNLSTM(wandb.config.n_hidden2)))
+            model.add(Bidirectional(CuDNNLSTM(wandb.config.n_hidden1, return_sequences=True,
+                kernel_regularizer=regularizers.l1_l2(l1=wandb.config.l1_regularization, l2=wandb.config.l2_regularization)), input_shape=self.input))
+            model.add(Dropout(0.50))
+            model.add(Bidirectional(CuDNNLSTM(wandb.config.n_hidden2,
+                kernel_regularizer=regularizers.l1_l2(l1=wandb.config.l1_regularization, l2=wandb.config.l2_regularization))))
             
         else:
             self.logger.info("NETWORK IS USING CPU!")
 
             # running on CPU
             # 
-            if self.config.getboolean('pairwise_lstm','lstm_kernel_regularization'):
-                model.add(Bidirectional(LSTM(wandb.config.n_hidden1, return_sequences=True,
-                    kernel_regularizer=regularizers.l1_l2(l1=0.01, l2=0.01)), input_shape=self.input))
-                model.add(Dropout(0.50))
-                model.add(Bidirectional(LSTM(wandb.config.n_hidden2,
-                    kernel_regularizer=regularizers.l1_l2(l1=0.01, l2=0.01))))
-            else:
-                model.add(Bidirectional(LSTM(wandb.config.n_hidden1, return_sequences=True), input_shape=self.input))
-                model.add(Dropout(0.50))
-                model.add(Bidirectional(LSTM(wandb.config.n_hidden2)))
+            model.add(Bidirectional(LSTM(wandb.config.n_hidden1, return_sequences=True,
+                kernel_regularizer=regularizers.l1_l2(l1=wandb.config.l1_regularization, l2=wandb.config.l2_regularization)), input_shape=self.input))
+            model.add(Dropout(0.50))
+            model.add(Bidirectional(LSTM(wandb.config.n_hidden2,
+                kernel_regularizer=regularizers.l1_l2(l1=wandb.config.l1_regularization, l2=wandb.config.l2_regularization))))
 
         model.add(Dense(wandb.config.n_dense1))
         model.add(Dropout(0.25))
