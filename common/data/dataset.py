@@ -1,7 +1,8 @@
+import copy
 import h5py
+import math
 import numpy as np
 import time
-import copy
 
 from common.utils.paths import *
 from tqdm import tqdm
@@ -106,47 +107,46 @@ class DeepVoiceDataset():
       val_share = self.config.getfloat('train','validation_share')
       al_share = self.__get_statistics__get_active_learning_share()
 
-      # all indices to choose from
+      # Choose the indices according to the relative share amounts and calculate
+      # the corresponding share both by-utterance and by-total-speaker-length
       # 
       all_indices = np.arange(data_file['statistics/' + speaker].shape[0])
+      total_speaker_time = np.sum(data_file['statistics/'+ speaker])
 
       num_indices = all_indices.shape[0]
       amount_of_val_indices = math.ceil(val_share * data_file['statistics/' + speaker].shape[0])
       amount_of_train_indices = num_indices - amount_of_val_indices
 
-      val_indices = np.random.choice(all_indices, amount_of_val_indices, replace=False)
+      val_indices = np.sort(np.random.choice(all_indices, amount_of_val_indices, replace=False))
       val_share = amount_of_val_indices / num_indices
+      val_time_share = np.sum(data_file['statistics/'+ speaker][val_indices]) / total_speaker_time
 
-      train_indices = np.delete(all_indices, val_indices)
+      train_indices = np.sort(np.delete(all_indices, val_indices))
 
       # Do we need to further split the training data for active learning?
       if self.config.getboolean('active_learning','enabled'):
         amount_of_al_indices = math.ceil(al_share * train_indices.shape[0])
 
-        al_indices = np.random.choice(train_indices, amount_of_al_indices, replace=False)
+        al_indices = np.sort(np.random.choice(train_indices, amount_of_al_indices, replace=False))
         al_share = amount_of_al_indices / num_indices
+        al_time_share = np.sum(data_file['statistics/'+ speaker][al_indices]) / total_speaker_time
 
-        train_indices = np.delete(train_indices, al_indices)
+        train_indices = np.sort(np.delete(train_indices, al_indices))
         train_share = 1.0 - val_share - al_share
-
-        # lehl@2019-12-28: TODO: change such that the al_share and val_share are calculated based
-        # on utterance lengths (see old implementation commented out below:)
-        # 
-        # al_cut_off_index = np.where(cumulative_sum > total_speaker_time * (1 - val_share) * (1 - al_share))[0][0] + 1
-        # train_indices = np.arange(al_cut_off_index)
-        # al_indices = np.arange(al_cut_off_index, val_cut_off_index)
-        # al_share = np.sum(data_file['statistics/'+ speaker][al_cut_off_index:val_cut_off_index] / total_speaker_time)
-        # train_share = 1.0 - val_share - al_share
+        train_time_share = np.sum(data_file['statistics/'+ speaker][train_indices]) / total_speaker_time
+      
       else:
         al_share = 0.0
+        al_time_share = 0.0
         train_share = 1.0 - val_share
+        train_time_share = np.sum(data_file['statistics/'+ speaker][train_indices]) / total_speaker_time
 
       # Collect the speaker statistics
       # 
       statistics[speaker] = {
-        'train': train_indices, 'train_share': train_share,
-        'al': al_indices, 'al_share': al_share,
-        'val': val_indices, 'val_share': val_share
+        'train': train_indices, 'train_share': train_share, 'train_time_share': train_time_share,
+        'al': al_indices, 'al_share': al_share, 'al_time_share': al_time_share,
+        'val': val_indices, 'val_share': val_share, 'val_time_share': val_time_share
       }
 
     # Close h5py Connection
