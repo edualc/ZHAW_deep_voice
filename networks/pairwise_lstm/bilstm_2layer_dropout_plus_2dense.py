@@ -98,7 +98,8 @@ class bilstm_2layer_dropout(object):
             'epsilon': self.config.getfloat('pairwise_lstm', 'adam_epsilon'),
             'decay': self.config.getfloat('pairwise_lstm', 'adam_decay'),
             'l1_regularization': self.config.getfloat('pairwise_lstm', 'l1_regularization'),
-            'l2_regularization': self.config.getfloat('pairwise_lstm', 'l2_regularization')
+            'l2_regularization': self.config.getfloat('pairwise_lstm', 'l2_regularization'),
+            'batch_size': self.config.getint('train','batch_size')
         })
 
         self.run_network()
@@ -108,6 +109,7 @@ class bilstm_2layer_dropout(object):
 
         from keras import backend as K
         list_of_gpus_available = K.tensorflow_backend._get_available_gpus()
+
         if len(list_of_gpus_available) > 0:
             self.logger.info("NETWORK IS USING GPU!")
 
@@ -177,13 +179,19 @@ class bilstm_2layer_dropout(object):
         return callbacks
 
     def fit(self, model, callbacks, epochs_to_run):
+        # Calculate the steps per epoch for training and validation
+        # 
+        train_steps = self.dataset.get_train_num_segments('train') // wandb.config.batch_size
+        val_steps = self.dataset.get_test_num_segments('all') // wandb.config.batch_size
+        print("Train Steps:",train_steps,"\tVal Steps:",val_steps)
+
         # Use multithreaded data generator
         # 
-        tg = ParallelTrainingDataGenerator(batch_size=256, segment_size=self.segment_size,
+        tg = ParallelTrainingDataGenerator(batch_size=wandb.config.batch_size, segment_size=self.segment_size,
             spectrogram_height=self.spectrogram_height, config=self.config, dataset=self.dataset)
         train_gen = tg.get_generator()
 
-        vg = ParallelValidationDataGenerator(batch_size=256, segment_size=self.segment_size,
+        vg = ParallelValidationDataGenerator(batch_size=wandb.config.batch_size, segment_size=self.segment_size,
             spectrogram_height=self.spectrogram_height, config=self.config, dataset=self.dataset)
         val_gen = vg.get_generator()
 
@@ -194,17 +202,12 @@ class bilstm_2layer_dropout(object):
 
         history = model.fit_generator(
             train_gen,
-            steps_per_epoch=4096,
+            steps_per_epoch=train_steps,
             epochs=epochs_to_run,
             callbacks=callbacks,
             validation_data=val_gen,
-            validation_steps=2,
-            # class_weight=None, # DEFAULT
-            # max_queue_size=10, # DEFAULT
-            # workers=1, # DEFAULT
+            validation_steps=val_steps,
             verbose=1
-            # use_multiprocessing=False, # DEFAULT
-            # initial_epoch=current_epoch
         )
 
         tg.terminate_queue()
