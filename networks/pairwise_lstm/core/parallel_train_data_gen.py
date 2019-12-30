@@ -8,7 +8,7 @@ import time
 import signal
 
 QUEUE_SIZE = 32
-NUM_PROCESSES = 128
+NUM_PROCESSES = 48
 
 class ParallelTrainingDataGenerator:
     def __init__(self, batch_size=100, segment_size=40, spectrogram_height=128, config=None, dataset=None):

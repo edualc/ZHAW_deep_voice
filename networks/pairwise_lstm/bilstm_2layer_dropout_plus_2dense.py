@@ -182,7 +182,7 @@ class bilstm_2layer_dropout(object):
         # Calculate the steps per epoch for training and validation
         # 
         train_steps = self.dataset.get_train_num_segments('train') // wandb.config.batch_size
-        val_steps = self.dataset.get_test_num_segments('all') // wandb.config.batch_size
+        val_steps = self.dataset.get_train_num_segments('val') // wandb.config.batch_size
         print("Train Steps:",train_steps,"\tVal Steps:",val_steps)
 
         # Use multithreaded data generator
