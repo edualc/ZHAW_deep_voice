@@ -7,7 +7,7 @@ import numpy as np
 import time
 import signal
 
-QUEUE_SIZE = 8
+QUEUE_SIZE = 32
 NUM_PROCESSES = 32
 
 class ParallelValidationDataGenerator:
