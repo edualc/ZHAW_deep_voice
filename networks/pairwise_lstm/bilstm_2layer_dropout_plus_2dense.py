@@ -172,7 +172,6 @@ class bilstm_2layer_dropout(object):
         callbacks.append(ActiveLearningEpochLogger(self.logger, self.epochs))
         callbacks.append(ActiveLearningUncertaintyCallback(self.dataset, self.config, self.logger, self.segment_size, self.spectrogram_height))
         callbacks.append(WandbCallback(save_model=False))
-        # 
         # callbacks.append(keras.callbacks.CSVLogger(get_experiment_logs(self.network_name + '.csv')))
         # callbacks.append(PlotCallback(self.network_name))
 
@@ -195,11 +194,8 @@ class bilstm_2layer_dropout(object):
             spectrogram_height=self.spectrogram_height, config=self.config, dataset=self.dataset)
         val_gen = vg.get_generator()
 
-        # # Use single_threaded data generator (legacy)
-        # # 
-        # train_gen = dg.batch_generator_h5('train', self.dataset, batch_size=100, segment_size=self.segment_size, spectrogram_height=self.spectrogram_height)
-        # val_gen = dg.batch_generator_h5('val', self.dataset, batch_size=100, segment_size=self.segment_size, spectrogram_height=self.spectrogram_height)
-
+        # Start training using the generators defined above
+        # 
         history = model.fit_generator(
             train_gen,
             steps_per_epoch=train_steps,

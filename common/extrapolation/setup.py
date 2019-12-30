@@ -43,7 +43,10 @@ def _dataset_to_setup():
         # [prepare_vox1_dict, '/mnt/all1/voxceleb1/dev/', 'vox1_dev_'],
         # [prepare_vox1_dict, '/mnt/all1/voxceleb1/test/', 'vox1_test_'],
         # [prepare_vox2_dict, '/mnt/all1/voxceleb2/complete/dev/', 'vox2_dev_'],
-        [prepare_vox2_dict, '/mnt/all1/voxceleb2/test/', 'vox2_test_'],
+        # [prepare_vox2_dict, '/mnt/all1/voxceleb2/test/', 'vox2_test_'],
+        # [prepare_vox2_dict, '/mnt/all1/voxceleb2/test/', 'musan_']
+        # [prepare_zeros_dict, '/mnt/all1/experiments/datasets/', 'debug_zeros_'],
+        # [prepare_overfit_dict, '/mnt/all1/experiments/datasets/', 'debug_overfit_']
     ]
 
 # Returns the different dataset types that are generated. Originally only
