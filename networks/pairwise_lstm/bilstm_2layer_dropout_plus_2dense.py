@@ -97,8 +97,6 @@ class bilstm_2layer_dropout(object):
             'beta_2': self.config.getfloat('pairwise_lstm', 'adam_beta_2'),
             'epsilon': self.config.getfloat('pairwise_lstm', 'adam_epsilon'),
             'decay': self.config.getfloat('pairwise_lstm', 'adam_decay'),
-            'l1_regularization': self.config.getfloat('pairwise_lstm', 'l1_regularization'),
-            'l2_regularization': self.config.getfloat('pairwise_lstm', 'l2_regularization'),
             'batch_size': self.config.getint('train','batch_size')
         })
 
@@ -115,22 +113,18 @@ class bilstm_2layer_dropout(object):
 
             # GPUs are available
             # 
-            model.add(Bidirectional(CuDNNLSTM(wandb.config.n_hidden1, return_sequences=True,
-                kernel_regularizer=regularizers.l1_l2(l1=wandb.config.l1_regularization, l2=wandb.config.l2_regularization)), input_shape=self.input))
+            model.add(Bidirectional(CuDNNLSTM(wandb.config.n_hidden1, return_sequences=True), input_shape=self.input))
             model.add(Dropout(0.50))
-            model.add(Bidirectional(CuDNNLSTM(wandb.config.n_hidden2,
-                kernel_regularizer=regularizers.l1_l2(l1=wandb.config.l1_regularization, l2=wandb.config.l2_regularization))))
+            model.add(Bidirectional(CuDNNLSTM(wandb.config.n_hidden2)))
             
         else:
             self.logger.info("NETWORK IS USING CPU!")
 
             # running on CPU
             # 
-            model.add(Bidirectional(LSTM(wandb.config.n_hidden1, return_sequences=True,
-                kernel_regularizer=regularizers.l1_l2(l1=wandb.config.l1_regularization, l2=wandb.config.l2_regularization)), input_shape=self.input))
+            model.add(Bidirectional(LSTM(wandb.config.n_hidden1, return_sequences=True), input_shape=self.input))
             model.add(Dropout(0.50))
-            model.add(Bidirectional(LSTM(wandb.config.n_hidden2,
-                kernel_regularizer=regularizers.l1_l2(l1=wandb.config.l1_regularization, l2=wandb.config.l2_regularization))))
+            model.add(Bidirectional(LSTM(wandb.config.n_hidden2)))
 
         model.add(Dense(wandb.config.n_dense1))
         model.add(Dropout(0.25))
@@ -180,8 +174,8 @@ class bilstm_2layer_dropout(object):
     def fit(self, model, callbacks, epochs_to_run):
         # Calculate the steps per epoch for training and validation
         # 
-        train_steps = self.dataset.get_train_num_segments('train') // wandb.config.batch_size
-        val_steps = self.dataset.get_train_num_segments('val') // wandb.config.batch_size
+        train_steps = self.dataset.get_train_num_segments('train') // wandb.config.batch_size + 1
+        val_steps = self.dataset.get_train_num_segments('val') // wandb.config.batch_size + 1
         print("Train Steps:",train_steps,"\tVal Steps:",val_steps)
 
         # Use multithreaded data generator
