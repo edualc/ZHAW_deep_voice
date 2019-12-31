@@ -2,17 +2,18 @@ from keras.callbacks import Callback
 from keras.callbacks import ModelCheckpoint
 from keras.models import Model
 
-from common.utils.paths import get_experiment_nets
-from common.analysis.metrics.eer import equal_error_rate
+from common.utils.paths import get_experiment_nets, get_evaluation_list
+from common.analysis.metrics.eer import equal_error_rate, eer_direct
 from common.clustering.generate_embeddings import generate_utterance_embeddings
 
-from networks.pairwise_lstm.core.data_gen import generate_test_data_h5
+from networks.pairwise_lstm.core.data_gen import generate_test_data_h5, generate_evaluation_data
 from . import plot_saver as ps
 
+import h5py
 import numpy as np
-import wandb
 import random
 import time
+import wandb
 
 CALLBACK_PERIOD = 1
 
@@ -127,16 +128,50 @@ class EERCallback(Callback):
 
         self.current_epoch += 1
 
+    def _calculate_eer__eval_lists(self):
+        return {
+            'vox1': get_evaluation_list('list_vox1'),
+            'vox1-cleaned': get_evaluation_list('list_vox1_c')
+        }
+
+    def _calculate_eer__validation_lists(self):
+        eval_lists = self._calculate_eer__eval_lists()
+        utterances = list()
+
+        for key in eval_lists:
+            for line in open(eval_lists[key], 'r'):
+                label, file1, file2 = line[:-1].split(' ')
+
+                utterances.append(file1)
+                utterances.append(file2)
+
+        return set(utterances)
+
+    def _calculate_eer__load_data(self):
+        utterances = self._calculate_eer__validation_lists()
+
+        X, y = generate_evaluation_data(
+            utterances,
+            self.config.get('test','voxceleb1_test'),
+            self.segment_size,
+            self.spectrogram_height
+        )
+
+        return X, y
+
     def _calculate_and_log_eer(self):
         # Load Data
+        # ================================================================================
         # 
         start = time.time()
-        X, y = generate_test_data_h5('all', self.dataset, self.segment_size, self.spectrogram_height, max_files_per_speaker=16, max_segments_per_utterance=1)
+        # X, y = generate_test_data_h5('all', self.dataset, self.segment_size, self.spectrogram_height, max_files_per_speaker=16, max_segments_per_utterance=1)
+        X, y = self._calculate_eer__load_data()
         end = time.time()
         data_time_taken = end - start
         self.logger.info("Preparing EER data took {}\t{}\t{}".format(data_time_taken, X.shape, y.shape))
 
         # Prepare Partial Model
+        # ================================================================================
         # 
         start = time.time()
         out_layer = self.config.getint('pairwise_lstm', 'out_layer')
@@ -149,38 +184,77 @@ class EERCallback(Callback):
         self.logger.info("Loading Model took {}".format(model_time_taken))
 
         # Predict Embeddings
+        # ================================================================================
         start = time.time()
         output = np.asarray(model_partial.predict(X))        
         end = time.time()
         prediction_time_taken = end - start
         self.logger.info("Calculating Predictions took {}".format(prediction_time_taken))
 
-        # Generate Utterance Embeddings
-        # 
+        # # Generate Utterance Embeddings
+        # # ================================================================================
+        # # 
+        # start = time.time()
+        # embeddings = generate_utterance_embeddings(output, y)
+        # end = time.time()
+        # embeddings_time_taken = end - start
+        # self.logger.info("Generating Embeddings took {}".format(embeddings_time_taken))
+
+        # Prepare Vox1-List Pairs
+        # ================================================================================
         start = time.time()
-        embeddings = generate_utterance_embeddings(output, y)
+        num_pairs = sum(1 for line in open(self._calculate_eer__eval_lists()['vox1']))
+
+        true_scores = np.zeros((num_pairs,))
+        scores = np.zeros((num_pairs,))
+        cosine_scores = np.zeros((num_pairs,))
+
+        index = 0
+        for line in open(self._calculate_eer__eval_lists()['vox1']):
+            line = line.rstrip() # remove ('\n')
+            label, file1, file2 = line.split(' ')
+            
+            true_scores[index] = label
+
+            embedding1 = output[np.where(y == file1)[0][0]]
+            embedding2 = output[np.where(y == file2)[0][0]]
+
+            # "Simple" multiplicative and cosine similarity scores
+            # 
+            scores[index] = np.sum(embedding1 * embedding2)
+            cosine_scores[index] = np.dot(embedding1, embedding2) / (np.linalg.norm(embedding1) * np.linalg.norm(embedding2))
+
+            index += 1
+
         end = time.time()
         embeddings_time_taken = end - start
-        self.logger.info("Generating Embeddings took {}".format(embeddings_time_taken))
+        self.logger.info("Generating Embedding-Pair Scores took {}".format(embeddings_time_taken))
 
         # Calculate EER
+        # ================================================================================
         # 
         start = time.time()
-        eer = equal_error_rate(embeddings)
+        # eer = equal_error_rate(embeddings)
+        eer_sum = eer_direct(true_scores, scores)
+        eer_cosine = eer_direct(true_scores, cosine_scores)
+
         end = time.time()
         eer_time_taken = end - start
         self.logger.info("Calculating EER took {}".format(eer_time_taken))
 
         # Log to WandB
+        # ================================================================================
         # 
         wandb.log({
-            'eer': eer,
+            'eer_sum': eer_sum,
+            'eer_cosine': eer_cosine,
             'data_time_taken': data_time_taken,
             'model_time_taken': model_time_taken,
             'prediction_time_taken': prediction_time_taken,
-            'embeddings_time_taken': embeddings_time_taken,
             'eer_time_taken': eer_time_taken
         }, commit=False)
+        # 'eer': eer,
+        # 'embeddings_time_taken': embeddings_time_taken,
 
 
 # Custom callback for own plots

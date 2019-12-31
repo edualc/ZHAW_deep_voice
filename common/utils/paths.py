@@ -55,6 +55,9 @@ def get_speaker_list(speaker):
     """
     return get_common('data', 'speaker_lists', speaker + '.txt')
 
+def get_evaluation_list(ident):
+    return get_common('data', 'evaluation_lists', ident + '.txt')
+
 
 def get_training(*args):
     return join(get_common('data', 'training'), *args)

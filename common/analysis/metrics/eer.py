@@ -45,8 +45,12 @@ def equal_error_rate(utterance_embeddings):
         scores = np.concatenate([scores, neg_scores])
         true_scores = np.concatenate([true_scores, np.zeros(neg_scores.shape)])
         
-    # EER Calculation
-    fpr, tpr, thresholds = roc_curve(true_scores, scores, pos_label=1)
+    eer = eer_direct(true_scores, scores, pos_label=1)
+
+    return eer
+
+def eer_direct(true_scores, scores, pos_label=1):
+    fpr, tpr, thresholds = roc_curve(true_scores, scores, pos_label=pos_label)
     eer = brentq(lambda x : 1. - x - interp1d(fpr, tpr)(x), 0., 1.)
     thresh = interp1d(fpr, thresholds)(eer)
     

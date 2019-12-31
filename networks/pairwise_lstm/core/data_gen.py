@@ -7,6 +7,7 @@ from random import randint, sample, choice
 
 import numpy as np
 import time
+import h5py
 
 from common.spectrogram.spectrogram_extractor import extract_spectrogram
 from . import settings
@@ -28,6 +29,41 @@ def shuffle_data(Xb, yb):
 def extract(spectrogram, segment_size):
     return extract_spectrogram(spectrogram, segment_size, settings.FREQ_ELEMENTS)
 
+def generate_evaluation_data(utterances_list, dataset_path, segment_size, spectrogram_height):
+    X_eval = np.zeros((len(utterances_list), segment_size, spectrogram_height))
+    y_eval = np.empty((len(utterances_list),), dtype=object)
+
+    index = 0
+    with h5py.File(dataset_path + '.h5', 'r') as f:
+        for element in utterances_list:
+            utterance_path = element
+            speaker = element.split('/')[0]
+
+            # Write Label for list matching
+            # 
+            y_eval[index] = utterance_path 
+
+            # Find out which utterance needs to be added
+            # 
+            statistics_ident = '/'.join(utterance_path.split('/')[1:])
+            utterance_index = np.where(f['audio_names'][speaker][:] == statistics_ident)[0][0]
+
+            full_spect = f['data'][speaker][utterance_index]
+            spect = full_spect.reshape((full_spect.shape[0] // spectrogram_height, spectrogram_height))
+
+            # Standardize
+            mu = np.mean(spect, 0, keepdims=True)
+            stdev = np.std(spect, 0, keepdims=True)
+            spect = (spect - mu) / (stdev + 1e-5)
+
+            # Extract random :segment_size long part of the spectrogram
+            # 
+            seg_idx = randint(0, spect.shape[0] - segment_size)
+            X_eval[index,:,:] = spect[seg_idx:seg_idx + segment_size, :]
+
+            index += 1
+
+    return X_eval, y_eval
 
 def generate_test_data_h5(test_type, dataset, segment_size, spectrogram_height, max_files_per_speaker=0, max_segments_per_utterance=0):
     if test_type not in ['all', 'short', 'long']:
