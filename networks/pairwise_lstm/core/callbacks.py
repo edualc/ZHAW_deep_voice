@@ -99,6 +99,13 @@ class ActiveLearningUncertaintyCallback(Callback):
             spect = spectrograms[i].reshape(spectrograms[i].shape[0] // self.spectrogram_height, self.spectrogram_height).T
             seg_idx = random.randint(0, spect.shape[1] - self.segment_size)
 
+            if spect.shape[0] < self.segment_size:
+                # In case the sample is shorter than the segment_length,
+                # we need to artificially prolong it
+                # 
+                num_repeats = self.segment_size // spect.shape[0] + 1
+                spect = np.tile(spect, (num_repeats,1))
+
             Xb[i, 0] = spect[:, seg_idx:seg_idx + self.segment_size]
             indices[i] = al_indices[i]
 
