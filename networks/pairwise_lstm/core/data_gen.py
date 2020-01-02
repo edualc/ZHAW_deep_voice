@@ -56,11 +56,11 @@ def generate_evaluation_data(utterances_list, dataset_path, segment_size, spectr
             stdev = np.std(spect, 0, keepdims=True)
             spect = (spect - mu) / (stdev + 1e-5)
 
-            if spect.shape[0] < self.segment_size:
+            if spect.shape[0] < segment_size:
                 # In case the sample is shorter than the segment_length,
                 # we need to artificially prolong it
                 # 
-                num_repeats = self.segment_size // spect.shape[0] + 1
+                num_repeats = segment_size // spect.shape[0] + 1
                 spect = np.tile(spect, (num_repeats,1))
 
             # Extract random :segment_size long part of the spectrogram
