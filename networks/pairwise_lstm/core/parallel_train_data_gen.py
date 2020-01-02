@@ -82,8 +82,7 @@ class ParallelTrainingDataGenerator:
             #
             full_spect = data['data/' + speaker_name][utterance_index]
 
-            # lehl@2019-12-03: Spectrogram needs to be reshaped with (time_length, 128) and then
-            # transposed as the expected ordering is (128, time_length)
+            # lehl@2019-12-03: Spectrogram needs to be reshaped with (time_length, 128)
             # 
             spect = full_spect.reshape((full_spect.shape[0] // self.spectrogram_height, self.spectrogram_height))
 
@@ -91,6 +90,13 @@ class ParallelTrainingDataGenerator:
             mu = np.mean(spect, 0, keepdims=True)
             stdev = np.std(spect, 0, keepdims=True)
             spect = (spect - mu) / (stdev + 1e-5)
+
+            if spect.shape[0] < self.segment_size:
+                # In case the sample is shorter than the segment_length,
+                # we need to artificially prolong it
+                # 
+                num_repeats = self.segment_size // spect.shape[0] + 1
+                spect = np.tile(spect, (num_repeats,1))
 
             # Extract random :segment_size long part of the spectrogram
             # 

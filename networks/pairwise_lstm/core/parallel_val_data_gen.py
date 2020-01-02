@@ -93,6 +93,13 @@ class ParallelValidationDataGenerator:
             stdev = np.std(spect, 0, keepdims=True)
             spect = (spect - mu) / (stdev + 1e-5)
 
+            if spect.shape[0] < self.segment_size:
+                # In case the sample is shorter than the segment_length,
+                # we need to artificially prolong it
+                # 
+                num_repeats = self.segment_size // spect.shape[0] + 1
+                spect = np.tile(spect, (num_repeats,1))
+
             # Extract random :segment_size long part of the spectrogram
             # 
             seg_idx = randint(0, spect.shape[0] - self.segment_size)

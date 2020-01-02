@@ -1,6 +1,7 @@
 import pickle
 import numpy as np
 import h5py
+import math
 
 import keras
 from keras import backend
@@ -10,6 +11,7 @@ from keras.layers import LSTM
 from keras.layers import CuDNNLSTM
 from keras.layers.wrappers import Bidirectional
 from keras.wrappers.scikit_learn import KerasClassifier
+from keras.callbacks import LearningRateScheduler, EarlyStopping
 from keras import regularizers
 from math import ceil
 
@@ -157,7 +159,7 @@ class bilstm_2layer_dropout(object):
         
         net_checkpoint = ActiveLearningModelCheckpoint(
             get_experiment_nets(self.network_name + "_{epoch:05d}.h5"),
-            period=100
+            period=5
         )
         
         callbacks = [net_saver, net_checkpoint]
@@ -166,10 +168,21 @@ class bilstm_2layer_dropout(object):
         callbacks.append(ActiveLearningEpochLogger(self.logger, self.epochs))
         callbacks.append(ActiveLearningUncertaintyCallback(self.dataset, self.config, self.logger, self.segment_size, self.spectrogram_height))
         callbacks.append(WandbCallback(save_model=False))
+        callbacks.append(LearningRateScheduler(self.lr_decay_fun(), verbose=1))
+        callbacks.append(EarlyStopping(monitor='val_loss', patience=3, verbose=1))
         # callbacks.append(keras.callbacks.CSVLogger(get_experiment_logs(self.network_name + '.csv')))
         # callbacks.append(PlotCallback(self.network_name))
 
         return callbacks
+
+    def lr_decay_fun(self):
+        def lr_scheduler(epoch, lr):
+            if epoch < 10:
+                return self.config.getfloat('pairwise_lstm', 'adam_lr')
+            else:
+                return self.config.getfloat('pairwise_lstm', 'adam_lr') * math.exp(0.1 * (10 - epoch))
+
+        return lr_scheduler
 
     def fit(self, model, callbacks, epochs_to_run):
         # Calculate the steps per epoch for training and validation
