@@ -92,12 +92,11 @@ class ActiveLearningUncertaintyCallback(Callback):
 
         spectrograms = self.dataset.get_train_file()['data/'+speaker][al_indices][:]
 
-        Xb = np.zeros((spectrograms.shape[0], 1, self.spectrogram_height, self.segment_size))
+        Xb = np.zeros((spectrograms.shape[0], self.segment_size, self.spectrogram_height))
         indices = np.zeros((spectrograms.shape[0]),dtype=np.int)
 
         for i in range(spectrograms.shape[0]):
-            spect = spectrograms[i].reshape(spectrograms[i].shape[0] // self.spectrogram_height, self.spectrogram_height).T
-            seg_idx = random.randint(0, spect.shape[1] - self.segment_size)
+            spect = spectrograms[i].reshape((spectrograms[i].shape[0] // self.spectrogram_height, self.spectrogram_height))
 
             if spect.shape[0] < self.segment_size:
                 # In case the sample is shorter than the segment_length,
@@ -106,12 +105,13 @@ class ActiveLearningUncertaintyCallback(Callback):
                 num_repeats = self.segment_size // spect.shape[0] + 1
                 spect = np.tile(spect, (num_repeats,1))
 
-            Xb[i, 0] = spect[:, seg_idx:seg_idx + self.segment_size]
+            seg_idx = random.randint(0, spect.shape[0] - self.segment_size)
+            Xb[i] = spect[seg_idx:seg_idx + self.segment_size, :]
             indices[i] = al_indices[i]
 
-        ys = self.model.predict(Xb.reshape(spectrograms.shape[0], self.segment_size, self.spectrogram_height))
+        ys = self.model.predict(Xb)
 
-        uncertainties = (1 - np.max(ys,axis=1)).reshape(ys.shape[0],1)
+        uncertainties = (1 - np.max(ys, axis=1)).reshape(ys.shape[0], 1)
         speaker_ids = np.full(uncertainties.shape, speaker)
         indices = indices.reshape(uncertainties.shape)
 
