@@ -168,7 +168,7 @@ class bilstm_2layer_dropout(object):
         callbacks.append(ActiveLearningEpochLogger(self.logger, self.epochs))
         callbacks.append(ActiveLearningUncertaintyCallback(self.dataset, self.config, self.logger, self.segment_size, self.spectrogram_height))
         callbacks.append(WandbCallback(save_model=False))
-        callbacks.append(LearningRateScheduler(self.lr_decay_fun(), verbose=1))
+        # callbacks.append(LearningRateScheduler(self.lr_decay_fun(), verbose=1))
         callbacks.append(EarlyStopping(monitor='val_loss', patience=2, verbose=1))
         # callbacks.append(keras.callbacks.CSVLogger(get_experiment_logs(self.network_name + '.csv')))
         # callbacks.append(PlotCallback(self.network_name))
