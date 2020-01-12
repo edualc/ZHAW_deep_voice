@@ -99,7 +99,11 @@ class bilstm_2layer_dropout(object):
             'beta_2': self.config.getfloat('pairwise_lstm', 'adam_beta_2'),
             'epsilon': self.config.getfloat('pairwise_lstm', 'adam_epsilon'),
             'decay': self.config.getfloat('pairwise_lstm', 'adam_decay'),
-            'batch_size': self.config.getint('train','batch_size')
+            'batch_size': self.config.getint('train','batch_size'),
+            'am_margin_cosface': self.config.getfloat('angular_loss','margin_cosface'),
+            'am_margin_arcface': self.config.getfloat('angular_loss','margin_arcface'),
+            'am_margin_sphereface': self.config.getfloat('angular_loss','margin_sphereface'),
+            'am_scale': self.config.getint('angular_loss','scale')
         })
 
         self.run_network()
