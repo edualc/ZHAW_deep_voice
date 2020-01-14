@@ -105,6 +105,9 @@ class Controller:
             if network == 'pairwise_lstm':
                 from networks.pairwise_lstm.lstm_controller import LSTMController
                 self.network_controllers.append(LSTMController(network_name, self.config, self.dev, self.best))
+            elif network == 'vggish':
+                from networks.vggish.vggish_controller import VggishController
+                self.network_controllers.append(VggishController(network_name, self.config, self.dev, self.best))
             elif network == 'resnet50':
                 from networks.resnet50.resnet50_controller import ResNet50Controller
                 self.network_controllers.append(ResNet50Controller(network_name, self.config, self.dev, self.best))
