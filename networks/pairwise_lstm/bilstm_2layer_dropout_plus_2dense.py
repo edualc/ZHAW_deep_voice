@@ -154,6 +154,8 @@ class bilstm_2layer_dropout(object):
         model.compile(loss=loss_function, optimizer=adam, metrics=['accuracy'])
         model.summary()
 
+        # import code; code.interact(local=dict(globals(), **locals()))
+
         return model
 
     def create_callbacks(self):

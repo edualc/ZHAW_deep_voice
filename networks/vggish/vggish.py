@@ -123,8 +123,7 @@ class vggish(object):
 
         # TODO: is this correct?
         # actual_input_shape = (None, 40, 128, 1)
-        data_input_shape = (None, 40, 128, 1)
-
+        data_input_shape = (None, self.segment_size, self.spectrogram_height, 1)
 
         model = Sequential()
         # if preproc == "no":
@@ -164,6 +163,9 @@ class vggish(object):
         model.add(Activation("relu"))
 
         model.add(GlobalMaxPooling2D())
+
+        model.add(Dense(wandb.config.n_dense1))
+        model.add(Dense(wandb.config.n_dense2))
 
         model.add(Dense(self.n_speakers, activation=softmax))
 
