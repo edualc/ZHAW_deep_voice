@@ -164,8 +164,8 @@ class vggish(object):
 
         model.add(GlobalMaxPooling2D())
 
-        model.add(Dense(wandb.config.n_dense1))
-        model.add(Dense(wandb.config.n_dense2))
+        # model.add(Dense(wandb.config.n_dense1))
+        # model.add(Dense(wandb.config.n_dense2))
 
         model.add(Dense(self.n_speakers, activation=softmax))
 
