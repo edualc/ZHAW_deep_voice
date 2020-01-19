@@ -53,7 +53,12 @@ def mel_spectrogram(wav_file):
 def dyn_range_compression(x):
     return np.log10(1 + 10000 * x)
 
-
+# lehl@2019-01-19:
+# Should this not be: ?
+# - 2595 * np.log10(f / 700 + 1)
+# - 1127 * np.log(f / 700 + 1)
+# (see https://en.wikipedia.org/wiki/Mel_scale)
+# 
 def hr_to_mel_spect(f):
     """Convert an array of frequency in Hz into mel."""
     return 1127.01048 * np.log10(f / 700 + 1)

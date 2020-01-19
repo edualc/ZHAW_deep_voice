@@ -197,15 +197,21 @@ class bilstm_2layer_dropout(object):
         val_steps = self.dataset.get_train_num_segments('val') // wandb.config.batch_size + 1
         print("Train Steps:",train_steps,"\tVal Steps:",val_steps)
 
+        # import code; code.interact(local=dict(globals(), **locals()))
+
         # Use multithreaded data generator
         # 
+        print("Setting up ParallelTrainingDataGenerator...", end='')
         tg = ParallelTrainingDataGenerator(batch_size=wandb.config.batch_size, segment_size=self.segment_size,
             spectrogram_height=self.spectrogram_height, config=self.config, dataset=self.dataset)
         train_gen = tg.get_generator()
+        print('done')
 
+        print("Setting up ParallelTrainingDataGenerator...", end='')
         vg = ParallelValidationDataGenerator(batch_size=wandb.config.batch_size, segment_size=self.segment_size,
             spectrogram_height=self.spectrogram_height, config=self.config, dataset=self.dataset)
         val_gen = vg.get_generator()
+        print('done')
 
         # Start training using the generators defined above
         # 
