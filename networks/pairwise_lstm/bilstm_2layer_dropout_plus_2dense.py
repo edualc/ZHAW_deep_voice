@@ -207,7 +207,7 @@ class bilstm_2layer_dropout(object):
         train_gen = tg.get_generator()
         print('done')
 
-        print("Setting up ParallelTrainingDataGenerator...", end='')
+        print("Setting up ParallelValidationDataGenerator...", end='')
         vg = ParallelValidationDataGenerator(batch_size=wandb.config.batch_size, segment_size=self.segment_size,
             spectrogram_height=self.spectrogram_height, config=self.config, dataset=self.dataset)
         val_gen = vg.get_generator()
