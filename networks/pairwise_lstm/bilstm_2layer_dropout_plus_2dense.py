@@ -113,7 +113,7 @@ class bilstm_2layer_dropout(object):
         list_of_gpus_available = K.tensorflow_backend._get_available_gpus()
 
         if len(list_of_gpus_available) > 0:
-            gpu_model = self.create_net__cpu_component()
+            gpu_model = self.create_net__gpu_component()
             gpu_model, gpu_loss, gpu_adam = self.create_net__classification_component(gpu_model)
             
             gpu_model.compile(loss=gpu_loss, optimizer=gpu_adam, metrics=['accuracy'])
