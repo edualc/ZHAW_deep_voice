@@ -48,18 +48,18 @@ class LSTMController(NetworkController):
 
     # Contains the VoxCeleb1 Evaluation Lists
     def eval_network__lists(self):
-        return {
-            'vox1-cleaned': get_evaluation_list('list_vox1_c')
-        }
-        
         # return {
-        #     'vox1': get_evaluation_list('list_vox1'),
-        #     'vox1-cleaned': get_evaluation_list('list_vox1_c'),
-        #     'vox1-E': get_evaluation_list('list_vox1_e'),
-        #     'vox1-E-cleaned': get_evaluation_list('list_vox1_ec'),
-        #     'vox1-H': get_evaluation_list('list_vox1_h'),
-        #     'vox1-H-cleaned': get_evaluation_list('list_vox1_hc')
+        #     'vox1-cleaned': get_evaluation_list('list_vox1_c')
         # }
+        
+        return {
+            'vox1': get_evaluation_list('list_vox1'),
+            'vox1-cleaned': get_evaluation_list('list_vox1_c'),
+            'vox1-E': get_evaluation_list('list_vox1_e'),
+            'vox1-E-cleaned': get_evaluation_list('list_vox1_ec'),
+            'vox1-H': get_evaluation_list('list_vox1_h'),
+            'vox1-H-cleaned': get_evaluation_list('list_vox1_hc')
+        }
 
     def eval_network(self):
         logger = get_logger('pairwise_lstm', logging.INFO)
@@ -283,27 +283,59 @@ class LSTMController(NetworkController):
                         y_pred_ward_linkage = embeddings_ward_linkage[-1:,2][0]
                         y_values_for_current_pair.append(y_pred_ward_linkage)
 
-                        # # TODO: Dominant Sets EER
-                        # # =====================================================================================
-                        # # 
-                        # import common.dominant_sets.dominantset as ds
+                        # TODO: Dominant Sets EER
+                        # =====================================================================================
+                        # 
+                        import common.dominant_sets.dominantset as ds
 
-                        # labels1 = data_file['labels'][idx1]
-                        # labels2 = data_file['labels'][idx2]
-                        # labels_stacked = np.hstack((labels1, labels2))
+                        labels1 = data_file['labels'][idx1]
+                        labels2 = data_file['labels'][idx2]
+                        labels_stacked = np.hstack((labels1, labels2))
 
-                        # # import code; code.interact(local=dict(globals(), **locals()))
+                        # import code; code.interact(local=dict(globals(), **locals()))
 
-                        # dos = ds.DominantSetClustering(feature_vectors=np.array(embeddings_stacked), speaker_ids=np.array(labels_stacked), metric='cosine', dominant_search=False, epsilon=1e-6, cutoff=0.15)
-                        # dos.apply_clustering()
-                        # dos.ds_result
+                        unique_labels, labels_categorical = np.unique(labels_stacked, return_inverse=True)
 
-                        # # import code; code.interact(local=dict(globals(), **locals()))
+                        # eps = 0.01
+                        # phi = 1e-7
+                        
+                        # mr_results = dict()
+
+                        # for eps in [1e-3, 1e-2, 1e-1]:
+                        #     mr_results[eps] = dict()
+
+                        #     for phi in [1e-9, 1e-8, 1e-7, 1e-6, 1e-5]:
+                        #         mr_results[eps][phi] = 0
+
+                        #         dos = ds.DominantSetClustering(
+                        #             feature_vectors=np.array(embeddings_stacked),
+                        #             speaker_ids=labels_categorical,
+                        #             metric='cosine',
+                        #             # hungarian method, True: max
+                        #             dominant_search=False,
+                        #             reassignment='noise',
+                        #             # eps 1e-6 default
+                        #             epsilon=eps,
+                        #             # phi 0.1 default
+                        #             cutoff=phi
+                        #         )
+                        #         dos.apply_clustering()
+
+                        #         mr, randi, acp = dos.evaluate()
+
+                        #         if mr > 0.0:
+                        #             mr_results[eps][phi] += 1
+                                
+
+                        #         print("\teps: {}\tphi: {}\t\tmr: {}".format(eps, phi, mr))
+                        # import code; code.interact(local=dict(globals(), **locals()))
 
                         # Write calculated similarities to result file
                         # =======================================================================================
                         #
                         result_file[list_key][i] = np.asarray(y_values_for_current_pair)
+                    
+                    # import code; code.interact(local=dict(globals(), **locals()))
 
             for list_key in self.eval_network__lists():
                 # Calculate EER with similarities
