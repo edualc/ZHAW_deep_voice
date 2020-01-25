@@ -154,7 +154,7 @@ class bilstm_2layer_dropout(object):
 
         return model, loss_function, adam
 
-    def create_net__cpu_component(self):
+    def create_net__gpu_component(self):
         self.logger.info("NETWORK IS USING GPU!")
         model = Sequential()
 
