@@ -35,6 +35,7 @@ DEFAULT_SETUP = ''
 DEFAULT_NETWORKS = ()
 DEFAULT_TRAIN = False
 DEFAULT_TEST = False
+DEFAULT_EVALUATE = False
 DEFAULT_PLOT = False
 DEFAULT_BEST = False
 DEFAULT_DEV = False
@@ -45,7 +46,7 @@ logging.getLogger('tensorflow').disabled = True
 
 class Controller:
     def __init__(self, config_name=DEFAULT_CONFIG,
-                 setup=DEFAULT_SETUP, networks=DEFAULT_NETWORKS, train=DEFAULT_TRAIN, test=DEFAULT_TEST,
+                 setup=DEFAULT_SETUP, networks=DEFAULT_NETWORKS, train=DEFAULT_TRAIN, test=DEFAULT_TEST, evaluate=DEFAULT_EVALUATE,
                  plot=DEFAULT_PLOT, best=DEFAULT_BEST, dev=DEFAULT_DEV):
         self.config_name = config_name
         self.config = load_config(None, join(get_configs(), config_name + '.cfg'))
@@ -53,6 +54,7 @@ class Controller:
         self.networks = networks
         self.train = train
         self.test = test
+        self.evaluate = evaluate
         self.plot = plot
         self.best = best
         self.dev = dev
@@ -74,28 +76,30 @@ class Controller:
         for network_controller in self.network_controllers:
             network_controller.test_network()
 
+    def eval_network(self):
+        for network_controller in self.network_controllers:
+            network_controller.eval_network()
+
     def plot_results(self):
         for network_controller in self.network_controllers:
             name = network_controller.name
             plot_files(name, get_result_files(name, self.best), self.config)
 
     def run(self):
-        # Setup
         if self.setup:
             self.setup_networks(self.setup)
 
-        # Validate network
         self.generate_controllers()
 
-        # Train network
         if self.train:
             self.train_network()
 
-        # Test network
         if self.test:
             self.test_network()
 
-        # Plot results
+        if self.evaluate:
+            self.eval_network()
+
         if self.plot:
             self.plot_results()
 
@@ -140,6 +144,8 @@ if __name__ == '__main__':
                         help='Train the specified network.')
     parser.add_argument('-test', dest='test', action='store_true',
                         help='Test the specified network.')
+    parser.add_argument('-eval', dest='evaluate', action='store_true',
+                        help='Evaluate the specified network.')
     parser.add_argument('-plot', dest='plot', action='store_true',
                         help='Plots the results of the specified networks.')
     parser.add_argument('-best', dest='best', action='store_true',
@@ -153,7 +159,7 @@ if __name__ == '__main__':
 
     controller = Controller(
         config_name=args.config_name, setup=args.setup, networks=tuple(args.networks), train=args.train, test=args.test,
-        plot=args.plot, best=args.best, dev=args.dev
+        plot=args.plot, best=args.best, dev=args.dev, evaluate=args.evaluate
     )
 
     controller.run()

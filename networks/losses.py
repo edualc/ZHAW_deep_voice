@@ -57,6 +57,7 @@ class AngularLoss:
 
     def get_dense(self):
         n_speakers = self.n_speakers
+        
         class AngularLossDense(Layer):
             def __init__(self, **kwargs):
                 super(AngularLossDense, self).__init__(**kwargs)
@@ -77,6 +78,7 @@ class AngularLoss:
 
             def compute_output_shape(self, input_shape):
                 return (None, n_speakers)
+
         return AngularLossDense
 
     def angular_loss(self, y_true, y_pred):

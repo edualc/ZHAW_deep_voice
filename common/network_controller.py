@@ -86,3 +86,6 @@ class NetworkController:
 
         analyse_results(self.name, checkpoint_names, set_of_predicted_clusters, set_of_true_clusters,
                         embeddings_numbers, set_of_times, set_of_utterance_embeddings)
+
+    def eval_network(self):
+        print("This network has not implemented the :eval_network method.")

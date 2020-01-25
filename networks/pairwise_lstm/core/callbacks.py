@@ -138,21 +138,25 @@ class EERCallback(Callback):
     def _calculate_eer__eval_lists(self):
         return {
             'vox1': get_evaluation_list('list_vox1'),
-            'vox1-cleaned': get_evaluation_list('list_vox1_c')
+            'vox1-cleaned': get_evaluation_list('list_vox1_c'),
+            'vox1-E': get_evaluation_list('list_vox1_e'),
+            'vox1-E-cleaned': get_evaluation_list('list_vox1_ec'),
+            'vox1-H': get_evaluation_list('list_vox1_h'),
+            'vox1-H-cleaned': get_evaluation_list('list_vox1_hc')
         }
 
     def _calculate_eer__validation_lists(self):
         eval_lists = self._calculate_eer__eval_lists()
-        utterances = list()
+        utterances = set()
 
         for key in eval_lists:
             for line in open(eval_lists[key], 'r'):
                 label, file1, file2 = line[:-1].split(' ')
 
-                utterances.append(file1)
-                utterances.append(file2)
+                utterances.add(file1)
+                utterances.add(file2)
 
-        return set(utterances)
+        return utterances
 
     def _calculate_eer__load_data(self):
         utterances = self._calculate_eer__validation_lists()

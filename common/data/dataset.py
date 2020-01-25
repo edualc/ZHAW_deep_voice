@@ -8,11 +8,11 @@ from common.utils.paths import *
 from tqdm import tqdm
 
 class DeepVoiceDataset():
-  def __init__(self, config):
+  def __init__(self, config, initialized=False):
       self.config = config
       self.data = dict()
 
-      self.initialized = False
+      self.initialized = initialized
       self.initialize()
 
   def initialize(self):

@@ -64,11 +64,7 @@ class bilstm_2layer_dropout(object):
         self.spectrogram_height = spectrogram_height
         self.input = (self.segment_size, self.spectrogram_height)
         
-        # Initialize WandB
-        self.wandb_run = wandb.init(
-            group=config.get('wandb','group'),
-            project=config.get('wandb','project_name')
-        )
+
 
         # Initializes Active Learning if necessary
         if self.config.getboolean('active_learning','enabled'):
@@ -86,11 +82,17 @@ class bilstm_2layer_dropout(object):
         else:
             self.epochs_before_active_learning = self.epochs
 
+    def initialize_wandb(self):
+        self.wandb_run = wandb.init(
+            group=config.get('wandb','group'),
+            project=config.get('wandb','project_name')
+        )
+        
         wandb.config.update({
-            'n_hidden1': config.getint('pairwise_lstm', 'n_hidden1'),
-            'n_hidden2': config.getint('pairwise_lstm', 'n_hidden2'),
-            'n_dense1': config.getint('pairwise_lstm', 'n_dense1'),
-            'n_dense2': config.getint('pairwise_lstm', 'n_dense2'),
+            'n_hidden1': self.config.getint('pairwise_lstm', 'n_hidden1'),
+            'n_hidden2': self.config.getint('pairwise_lstm', 'n_hidden2'),
+            'n_dense1': self.config.getint('pairwise_lstm', 'n_dense1'),
+            'n_dense2': self.config.getint('pairwise_lstm', 'n_dense2'),
             'epochs': self.epochs,
             'epochs_before_al': self.epochs_before_active_learning,
             'segment_size': self.segment_size,
@@ -106,36 +108,35 @@ class bilstm_2layer_dropout(object):
             'am_scale': self.config.getint('angular_loss','scale')
         })
 
-        self.run_network()
-
     def create_net(self):
-        model = Sequential()
-
         from keras import backend as K
         list_of_gpus_available = K.tensorflow_backend._get_available_gpus()
 
         if len(list_of_gpus_available) > 0:
-            self.logger.info("NETWORK IS USING GPU!")
-
-            # GPUs are available
-            # 
-            model.add(Bidirectional(CuDNNLSTM(wandb.config.n_hidden1, return_sequences=True), input_shape=self.input))
-            model.add(Dropout(0.50))
-            model.add(Bidirectional(CuDNNLSTM(wandb.config.n_hidden2)))
+            gpu_model = self.create_net__cpu_component()
+            gpu_model, gpu_loss, gpu_adam = self.create_net__classification_component(gpu_model)
             
+            gpu_model.compile(loss=gpu_loss, optimizer=gpu_adam, metrics=['accuracy'])
+            gpu_model.summary()
+
+            # self.create_net__save_model(gpu_model, 'gpu')
+            return gpu_model
+
         else:
-            self.logger.info("NETWORK IS USING CPU!")
+            cpu_model = self.create_net__cpu_component()
+            cpu_model, cpu_loss, cpu_adam = self.create_net__classification_component(cpu_model)
+            
+            cpu_model.compile(loss=cpu_loss, optimizer=cpu_adam, metrics=['accuracy'])
+            cpu_model.summary()
 
-            # running on CPU
-            # 
-            model.add(Bidirectional(LSTM(wandb.config.n_hidden1, return_sequences=True), input_shape=self.input))
-            model.add(Dropout(0.50))
-            model.add(Bidirectional(LSTM(wandb.config.n_hidden2)))
+            # self.create_net__save_model(cpu_model, 'cpu')
+            return cpu_model
 
-        model.add(Dense(wandb.config.n_dense1))
+    def create_net__classification_component(self, model):
+        model.add(Dense(self.config.getint('pairwise_lstm', 'n_dense1')))
         model.add(Dropout(0.25))
         
-        model.add(Dense(wandb.config.n_dense2))
+        model.add(Dense(self.config.getint('pairwise_lstm', 'n_dense2')))
 
         # This adds the final (Dense) layer
         # 
@@ -144,19 +145,43 @@ class bilstm_2layer_dropout(object):
         loss_function = get_loss(self.config)
 
         adam = keras.optimizers.Adam(
-            lr=wandb.config.learning_rate,
-            beta_1=wandb.config.beta_1,
-            beta_2=wandb.config.beta_2,
-            epsilon=wandb.config.epsilon,
-            decay=wandb.config.decay
+            lr=self.config.getfloat('pairwise_lstm', 'adam_lr'),
+            beta_1=self.config.getfloat('pairwise_lstm', 'adam_beta_1'),
+            beta_2=self.config.getfloat('pairwise_lstm', 'adam_beta_2'),
+            epsilon=self.config.getfloat('pairwise_lstm', 'adam_epsilon'),
+            decay=self.config.getfloat('pairwise_lstm', 'adam_decay')
         )
 
-        model.compile(loss=loss_function, optimizer=adam, metrics=['accuracy'])
-        model.summary()
+        return model, loss_function, adam
 
-        # import code; code.interact(local=dict(globals(), **locals()))
+    def create_net__cpu_component(self):
+        self.logger.info("NETWORK IS USING GPU!")
+        model = Sequential()
+
+        model.add(Bidirectional(CuDNNLSTM(self.config.getint('pairwise_lstm', 'n_hidden1'), return_sequences=True), input_shape=self.input))
+        model.add(Dropout(0.50))
+        model.add(Bidirectional(CuDNNLSTM(self.config.getint('pairwise_lstm', 'n_hidden2'))))
 
         return model
+
+    def create_net__cpu_component(self):
+        self.logger.info("NETWORK IS USING CPU!")
+        model = Sequential()
+
+        # needs activation/recurrent_activation defined with
+        # CuDNNLSTM defaults such that the model can be loaded with compatible weights
+        # 
+        model.add(Bidirectional(LSTM(self.config.getint('pairwise_lstm', 'n_hidden1'), activation='tanh',recurrent_activation='sigmoid', return_sequences=True), input_shape=self.input))
+        model.add(Dropout(0.50))
+        model.add(Bidirectional(LSTM(self.config.getint('pairwise_lstm', 'n_hidden2'), activation='tanh',recurrent_activation='sigmoid')))
+
+        return model
+
+    def create_net__save_model(self, model, suffix):
+        model_file = get_experiment_nets(self.network_name + '__' + suffix + '_model.json')
+
+        with open(model_file, 'w') as json_file:
+            json_file.write(model.to_json())
 
     def create_callbacks(self):
         net_saver = keras.callbacks.ModelCheckpoint(
@@ -193,8 +218,9 @@ class bilstm_2layer_dropout(object):
     def fit(self, model, callbacks, epochs_to_run):
         # Calculate the steps per epoch for training and validation
         # 
-        train_steps = self.dataset.get_train_num_segments('train') // wandb.config.batch_size + 1
-        val_steps = self.dataset.get_train_num_segments('val') // wandb.config.batch_size + 1
+        batch_size = self.config.getint('train','batch_size')
+        train_steps = self.dataset.get_train_num_segments('train') // batch_size + 1
+        val_steps = self.dataset.get_train_num_segments('val') // batch_size + 1
         print("Train Steps:",train_steps,"\tVal Steps:",val_steps)
 
         # import code; code.interact(local=dict(globals(), **locals()))
@@ -202,13 +228,13 @@ class bilstm_2layer_dropout(object):
         # Use multithreaded data generator
         # 
         print("Setting up ParallelTrainingDataGenerator...", end='')
-        tg = ParallelTrainingDataGenerator(batch_size=wandb.config.batch_size, segment_size=self.segment_size,
+        tg = ParallelTrainingDataGenerator(batch_size=batch_size, segment_size=self.segment_size,
             spectrogram_height=self.spectrogram_height, config=self.config, dataset=self.dataset)
         train_gen = tg.get_generator()
         print('done')
 
         print("Setting up ParallelValidationDataGenerator...", end='')
-        vg = ParallelValidationDataGenerator(batch_size=wandb.config.batch_size, segment_size=self.segment_size,
+        vg = ParallelValidationDataGenerator(batch_size=batch_size, segment_size=self.segment_size,
             spectrogram_height=self.spectrogram_height, config=self.config, dataset=self.dataset)
         val_gen = vg.get_generator()
         print('done')
@@ -232,6 +258,8 @@ class bilstm_2layer_dropout(object):
         # base keras network
         model = self.create_net()
         callbacks = self.create_callbacks()
+
+        self.initialize_wandb()
 
         # initial train
         if self.epochs_before_active_learning > 0:
