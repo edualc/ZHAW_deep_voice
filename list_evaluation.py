@@ -17,7 +17,6 @@ eval_lists = {
 utterances = dict()
 speakers = dict()
 
-
 for key in eval_lists:
     utterances[key] = list()
     speakers[key] = list()
