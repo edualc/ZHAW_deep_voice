@@ -343,8 +343,7 @@ class LSTMController(NetworkController):
                 embeddings_distance = cdist(new_embeddings, new_embeddings, 'cosine')
                 embeddings_distance_condensed = embeddings_distance[np.triu_indices(embeddings_distance.shape[0],1)]
 
-                # for linkage_method in ['single','complete','average','weighted','centroid','median','ward']:
-                for linkage_method in ['complete']:
+                for linkage_method in ['single','complete','average','weighted','centroid','median','ward']:
                     tmp.append(linkage(embeddings_distance_condensed, linkage_method, 'cosine')[-1:,2][0])
                 
         return tmp
