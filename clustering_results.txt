@@ -1,0 +1,85 @@
+
+EER for vox1-cleaned: (BASE)
+  5.53665         linkage_average
+  5.61433         linkage_weighted
+  5.66429         linkage_centroid
+  5.7413          linkage_median
+  5.80789         linkage_ward
+  5.84295         mean_cosine
+  5.99404         mean_sum
+  6.1682          linkage_single
+  6.60036         linkage_complete
+
+EER for vox1-cleaned: (dominant set ideas)
+  5.53665         linkage_average
+  5.61433         linkage_weighted
+  5.66429         linkage_centroid
+  5.7413          linkage_median
+  5.80789         linkage_ward
+  5.84295         mean_cosine
+  5.99404         mean_sum
+  6.1682          linkage_single
+  6.42777         dominant_set__linkage_complete
+  6.48335         dominant_set__linkage_centroid
+  6.60036         linkage_complete
+  6.73333         dominant_set__linkage_average
+  7.62685         dominant_set__linkage_median
+  8.17998         dominant_set__linkage_ward
+  8.23685         dominant_set__linkage_weighted
+  16.33261        dominant_set__linkage_single
+
+EER for vox1-cleaned: (hmin = H - min(h1,h2))
+  5.53665         H
+  5.84295         mean_cosine
+  5.99404         mean_sum
+  8.38209         hmin
+  8.6145          hmax
+  25.94405        ce + hmax
+  25.98128        ce + hmin
+  26.53889        ce + H
+  27.51874        ce * hmax
+  30.65276        ce * hmin
+  37.25876        ce * H
+  50.67484        ce
+
+EER for vox1-cleaned: (H = H^2, hmin = H - min(h1,h2))
+  5.53665         H
+  5.84295         mean_cosine
+  5.99404         mean_sum
+  8.41087         hmin
+  8.6448          hmax
+  18.5448         ce * hmax
+  24.77743        ce + hmax
+  24.86969        ce + hmin
+  25.2964         ce + H
+  25.73236        ce * hmin
+  29.31967        ce * H
+  50.67484        ce
+
+EER for vox1-cleaned: (hmin = H + min(h1,h2))
+  5.53665         H
+  5.84295         mean_cosine
+  5.99404         mean_sum
+  9.94575         hmax
+  10.05744        hmin
+  26.53889        ce + H
+  28.24168        ce + hmin
+  28.3056         ce + hmax
+  37.25876        ce * H
+  40.71907        ce * hmin
+  41.60196        ce * hmax
+  50.67484        ce
+
+EER for vox1-cleaned: (hmin = min(h1, h2))
+  5.53665         H
+  5.84295         mean_cosine
+  5.99404         mean_sum
+  26.53889        ce + H
+  37.25876        ce * H
+  48.82985        hmax
+  50.06328        ce * hmax
+  50.12765        ce * hmin
+  50.17844        ce + hmax
+  50.45836        hmin
+  50.67484        ce
+  50.8681         ce + hmin

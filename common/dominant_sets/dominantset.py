@@ -150,6 +150,14 @@ class DominantSetClustering:
         if x.size > 0:  # in case of 1 remaining element, put him on a single cluster
             self.update_cluster(x >= 0., x)
 
+    # Used in LstmController --eval
+    def get_most_participating(self):
+        return evaluation.get_most_partecipating(labels=self.ds_result, ground_truth=self.speaker_ids, x=self.ds_vals)
+
+    # Used in LstmController --eval
+    def get_hungarian(self):
+        return evaluation.get_hungarian(labels=self.ds_result, ground_truth=self.speaker_ids)
+
     def evaluate(self):
         self.k = np.max(self.ds_result)+1
 
