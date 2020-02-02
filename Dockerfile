@@ -1,5 +1,6 @@
 FROM tensorflow/tensorflow:1.15.0-gpu-py3
 RUN apt-get -y update && apt-get install -y libsndfile1
+RUN apt-get -y update && apt-get install -y ffmpeg
 RUN pip install --upgrade pip
 RUN pip install numpy==1.17.4
 RUN pip install scipy==1.3.2
