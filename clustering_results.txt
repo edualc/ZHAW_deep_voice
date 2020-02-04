@@ -1,5 +1,5 @@
 
-EER for vox1-cleaned: (BASE)
+EER for vox1-cleaned: (50% shift) (BASE)
   5.53665         linkage_average
   5.61433         linkage_weighted
   5.66429         linkage_centroid
@@ -10,7 +10,7 @@ EER for vox1-cleaned: (BASE)
   6.1682          linkage_single
   6.60036         linkage_complete
 
-EER for vox1-cleaned: (dominant set ideas)
+EER for vox1-cleaned: (50% shift) (dominant set ideas)
   5.53665         linkage_average
   5.61433         linkage_weighted
   5.66429         linkage_centroid
@@ -28,7 +28,7 @@ EER for vox1-cleaned: (dominant set ideas)
   8.23685         dominant_set__linkage_weighted
   16.33261        dominant_set__linkage_single
 
-EER for vox1-cleaned: (hmin = H - min(h1,h2))
+EER for vox1-cleaned: (50% shift) (hmin = H - min(h1,h2))
   5.53665         H
   5.84295         mean_cosine
   5.99404         mean_sum
@@ -42,7 +42,7 @@ EER for vox1-cleaned: (hmin = H - min(h1,h2))
   37.25876        ce * H
   50.67484        ce
 
-EER for vox1-cleaned: (H = H^2, hmin = H - min(h1,h2))
+EER for vox1-cleaned: (50% shift) (H = H^2, hmin = H - min(h1,h2))
   5.53665         H
   5.84295         mean_cosine
   5.99404         mean_sum
@@ -56,7 +56,7 @@ EER for vox1-cleaned: (H = H^2, hmin = H - min(h1,h2))
   29.31967        ce * H
   50.67484        ce
 
-EER for vox1-cleaned: (hmin = H + min(h1,h2))
+EER for vox1-cleaned: (50% shift) (hmin = H + min(h1,h2))
   5.53665         H
   5.84295         mean_cosine
   5.99404         mean_sum
@@ -70,7 +70,7 @@ EER for vox1-cleaned: (hmin = H + min(h1,h2))
   41.60196        ce * hmax
   50.67484        ce
 
-EER for vox1-cleaned: (hmin = min(h1, h2))
+EER for vox1-cleaned: (50% shift) (hmin = min(h1, h2))
   5.53665         H
   5.84295         mean_cosine
   5.99404         mean_sum
@@ -83,3 +83,193 @@ EER for vox1-cleaned: (hmin = min(h1, h2))
   50.45836        hmin
   50.67484        ce
   50.8681         ce + hmin
+
+EER for vox1-cleaned: (50% shift)
+  5.53665         linkage_average
+  5.61433         linkage_weighted
+  5.66429         linkage_centroid
+  5.7413          linkage_median
+  5.80789         linkage_ward
+  5.84295         mean_cosine
+  5.99404         mean_sum
+  6.1682          linkage_single
+  6.3215          dominant_set_C_linkage_centroid
+  6.33443         dominant_set_B_linkage_centroid
+  6.34271         dominant_set_F_linkage_centroid
+  6.36634         dominant_set_I_linkage_centroid
+  6.37772         dominant_set_C_linkage_complete
+  6.38359         dominant_set_H_linkage_centroid
+  6.38524         dominant_set_K_linkage_centroid
+  6.38524         dominant_set_L_linkage_centroid
+  6.38584         dominant_set_B_linkage_complete
+  6.38891         dominant_set_E_linkage_centroid
+  6.39056         dominant_set_F_linkage_complete
+  6.39587         dominant_set_D_linkage_complete
+  6.39587         dominant_set_G_linkage_complete
+  6.39667         dominant_set_J_linkage_complete
+  6.39826         dominant_set_A_linkage_complete
+  6.40119         dominant_set_I_linkage_complete
+  6.40357         dominant_set_D_linkage_centroid
+  6.40357         dominant_set_G_linkage_centroid
+  6.40357         dominant_set_H_linkage_complete
+  6.40357         dominant_set_J_linkage_centroid
+  6.40357         dominant_set_K_linkage_complete
+  6.40889         dominant_set_L_linkage_complete
+  6.41182         dominant_set_E_linkage_complete
+  6.41421         dominant_set_A_linkage_centroid
+  6.58004         dominant_set_C_linkage_average
+  6.60036         linkage_complete
+  6.69892         dominant_set_D_linkage_average
+  6.70141         dominant_set_I_linkage_average
+  6.70424         dominant_set_G_linkage_average
+  6.70507         dominant_set_J_linkage_average
+  6.71205         dominant_set_B_linkage_average
+  6.71205         dominant_set_H_linkage_average
+  6.71205         dominant_set_K_linkage_average
+  6.71487         dominant_set_A_linkage_average
+  6.71737         dominant_set_E_linkage_average
+  6.72019         dominant_set_F_linkage_average
+  6.72019         dominant_set_L_linkage_average
+  7.14818         dominant_set_C_linkage_median
+  7.24391         dominant_set_B_linkage_median
+  7.25455         dominant_set_F_linkage_median
+  7.29178         dominant_set_I_linkage_median
+  7.2997          dominant_set_D_linkage_median
+  7.30241         dominant_set_G_linkage_median
+  7.30241         dominant_set_H_linkage_median
+  7.30241         dominant_set_J_linkage_median
+  7.30241         dominant_set_K_linkage_median
+  7.30501         dominant_set_E_linkage_median
+  7.30773         dominant_set_L_linkage_median
+  7.31305         dominant_set_A_linkage_median
+  7.50452         dominant_set_C_linkage_weighted
+  7.74918         dominant_set_B_linkage_weighted
+  7.74918         dominant_set_F_linkage_weighted
+  7.79825         dominant_set_I_linkage_weighted
+  7.80752         dominant_set_G_linkage_weighted
+  7.80752         dominant_set_J_linkage_weighted
+  7.81065         dominant_set_D_linkage_weighted
+  7.81541         dominant_set_H_linkage_weighted
+  7.81832         dominant_set_A_linkage_weighted
+  7.81952         dominant_set_L_linkage_weighted
+  7.82072         dominant_set_E_linkage_weighted
+  7.82266         dominant_set_K_linkage_weighted
+  8.63206         dominant_set_K_linkage_ward
+  8.6397          dominant_set_H_linkage_ward
+  8.64141         dominant_set_D_linkage_ward
+  8.6427          dominant_set_I_linkage_ward
+  8.64802         dominant_set_J_linkage_ward
+  8.64907         dominant_set_G_linkage_ward
+  8.65333         dominant_set_E_linkage_ward
+  8.65333         dominant_set_L_linkage_ward
+  8.65543         dominant_set_A_linkage_ward
+  8.68201         dominant_set_F_linkage_ward
+  8.68603         dominant_set_B_linkage_ward
+  8.95557         dominant_set_C_linkage_ward
+  12.74306        dominant_set_C_linkage_single
+  13.58924        dominant_set_F_linkage_single
+  13.64241        dominant_set_B_linkage_single
+  13.76469        dominant_set_I_linkage_single
+  13.81785        dominant_set_L_linkage_single
+  13.82403        dominant_set_E_linkage_single
+  13.82832        dominant_set_H_linkage_single
+  13.82832        dominant_set_K_linkage_single
+  13.99319        dominant_set_D_linkage_single
+  13.99862        dominant_set_G_linkage_single
+  14.00393        dominant_set_A_linkage_single
+  14.00393        dominant_set_J_linkage_single
+
+EER for vox1-cleaned: (25% shift)
+  5.51863         linkage_average
+  5.5526          linkage_centroid
+  5.6962          linkage_weighted
+  5.7632          mean_cosine
+  5.80789         linkage_median
+  6.04191         dominant_set_F_linkage_centroid
+  6.04498         mean_sum
+  6.04723         dominant_set_E_linkage_centroid
+  6.05006         dominant_set_B_linkage_centroid
+  6.05255         dominant_set_I_linkage_centroid
+  6.05255         dominant_set_L_linkage_centroid
+  6.06318         dominant_set_H_linkage_centroid
+  6.06318         dominant_set_K_linkage_centroid
+  6.07156         dominant_set_C_linkage_centroid
+  6.07914         dominant_set_D_linkage_centroid
+  6.08067         dominant_set_C_linkage_complete
+  6.08118         dominant_set_J_linkage_centroid
+  6.08219         dominant_set_G_linkage_centroid
+  6.08751         dominant_set_A_linkage_centroid
+  6.11409         dominant_set_B_linkage_complete
+  6.11652         dominant_set_A_linkage_complete
+  6.11941         dominant_set_F_linkage_complete
+  6.12169         dominant_set_D_linkage_complete
+  6.12169         dominant_set_E_linkage_complete
+  6.12169         dominant_set_J_linkage_complete
+  6.12473         dominant_set_H_linkage_complete
+  6.12473         dominant_set_I_linkage_complete
+  6.12473         dominant_set_K_linkage_complete
+  6.12473         dominant_set_L_linkage_complete
+  6.12503         dominant_set_G_linkage_complete
+  6.13536         linkage_single
+  6.21211         dominant_set_F_linkage_average
+  6.21511         dominant_set_B_linkage_average
+  6.23638         dominant_set_E_linkage_average
+  6.23638         dominant_set_I_linkage_average
+  6.23638         dominant_set_L_linkage_average
+  6.25233         dominant_set_H_linkage_average
+  6.25385         dominant_set_K_linkage_average
+  6.27359         dominant_set_G_linkage_average
+  6.27645         dominant_set_D_linkage_average
+  6.27878         dominant_set_J_linkage_average
+  6.28954         dominant_set_A_linkage_average
+  6.29188         dominant_set_C_linkage_average
+  6.59259         linkage_complete
+  6.74396         linkage_ward
+  6.95241         dominant_set_C_linkage_median
+  7.07903         dominant_set_B_linkage_median
+  7.07903         dominant_set_F_linkage_median
+  7.08657         dominant_set_I_linkage_median
+  7.08967         dominant_set_E_linkage_median
+  7.08967         dominant_set_L_linkage_median
+  7.09965         dominant_set_D_linkage_median
+  7.10031         dominant_set_G_linkage_median
+  7.1026          dominant_set_J_linkage_median
+  7.10563         dominant_set_H_linkage_median
+  7.10563         dominant_set_K_linkage_median
+  7.11095         dominant_set_A_linkage_median
+  7.23327         dominant_set_C_linkage_weighted
+  7.38476         dominant_set_F_linkage_weighted
+  7.40879         dominant_set_B_linkage_weighted
+  7.41474         dominant_set_I_linkage_weighted
+  7.41942         dominant_set_E_linkage_weighted
+  7.41942         dominant_set_L_linkage_weighted
+  7.42474         dominant_set_H_linkage_weighted
+  7.42474         dominant_set_K_linkage_weighted
+  7.43538         dominant_set_D_linkage_weighted
+  7.4424          dominant_set_G_linkage_weighted
+  7.4424          dominant_set_J_linkage_weighted
+  7.45388         dominant_set_A_linkage_weighted
+  9.99894         dominant_set_I_linkage_ward
+  10.00425        dominant_set_E_linkage_ward
+  10.00585        dominant_set_L_linkage_ward
+  10.01648        dominant_set_H_linkage_ward
+  10.01648        dominant_set_K_linkage_ward
+  10.02021        dominant_set_D_linkage_ward
+  10.02021        dominant_set_G_linkage_ward
+  10.02021        dominant_set_J_linkage_ward
+  10.03775        dominant_set_B_linkage_ward
+  10.03789        dominant_set_A_linkage_ward
+  10.04148        dominant_set_F_linkage_ward
+  10.39783        dominant_set_C_linkage_ward
+  13.89229        dominant_set_C_linkage_single
+  14.02671        dominant_set_F_linkage_single
+  14.0571         dominant_set_B_linkage_single
+  14.1209         dominant_set_L_linkage_single
+  14.12848        dominant_set_E_linkage_single
+  14.14743        dominant_set_I_linkage_single
+  14.1528         dominant_set_H_linkage_single
+  14.16343        dominant_set_K_linkage_single
+  14.16718        dominant_set_D_linkage_single
+  14.1872         dominant_set_J_linkage_single
+  14.19002        dominant_set_G_linkage_single
+  14.22192        dominant_set_A_linkage_single
